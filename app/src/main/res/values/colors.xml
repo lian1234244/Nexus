@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="nexus_black">#FF000000</color>
+    <color name="nexus_deep_space">#FF050510</color>
+    <color name="nexus_neon_cyan">#FF00F5FF</color>
+    <color name="nexus_neon_blue">#FF0066FF</color>
+    <color name="nexus_neon_purple">#FF8B5CF6</color>
+    <color name="nexus_neon_pink">#FFFF00FF</color>
+    <color name="nexus_white">#FFFFFFFF</color>
+    <color name="nexus_glow_core">#FF00D4FF</color>
+    <color name="nexus_energy_gold">#FFFFD700</color>
+    <color name="nexus_plasma_red">#FFFF2244</color>
+    <color name="nexus_dark_surface">#FF121218</color>
+    <color name="nexus_glass_bg">#B0101018</color>
+</resources>
