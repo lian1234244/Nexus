@@ -27,6 +27,7 @@ class CgSplashView @JvmOverloads constructor(
     private val streakLines = mutableListOf<StreakLine>()
     private val sparkParticles = mutableListOf<SparkParticle>()
 
+    private val density get() = context.resources.displayMetrics.density
     private val centerX get() = width / 2f
     private val centerY get() = height / 2f
     private val radius get() = min(width, height) / 2f
@@ -285,7 +286,7 @@ class CgSplashView @JvmOverloads constructor(
             canvas.drawCircle(centerX, centerY, r, glowPaint)
         }
 
-        val pulseT = sin(time * 0.003) * 0.5f + 0.5f
+        val pulseT = sin(time * 0.003f).toFloat() * 0.5f + 0.5f
         val pulseR = glowR * (1.1f + pulseT * 0.3f)
         glowPaint.color = Color.argb(
             (logoAlpha * 0.08f * 255).toInt().coerceIn(0, 255), 139, 92, 246
@@ -318,7 +319,7 @@ class CgSplashView @JvmOverloads constructor(
         val innerSize = size * 0.55f
         val innerPath = createHexagonPath(innerSize)
         val rotation = time * 0.001f
-        canvas.rotate(rotation * 30 % 360)
+        canvas.rotate((rotation * 30 % 360))
         logoPaint.style = Paint.Style.STROKE
         logoPaint.strokeWidth = 2f * density
         logoPaint.color = Color.argb((logoAlpha * 200).toInt().coerceIn(0, 255), 139, 92, 246)
@@ -329,7 +330,7 @@ class CgSplashView @JvmOverloads constructor(
         logoPaint.color = Color.argb((logoAlpha * 255).toInt().coerceIn(0, 255), 0, 212, 255)
         canvas.drawCircle(0f, 0f, coreSize, logoPaint)
 
-        val coreGlowSize = coreSize * (1.5f + sin(time * 0.005f) * 0.3f)
+        val coreGlowSize = coreSize * (1.5f + sin(time * 0.005f).toFloat() * 0.3f)
         logoPaint.color = Color.argb((logoAlpha * 80).toInt().coerceIn(0, 255), 0, 212, 255)
         canvas.drawCircle(0f, 0f, coreGlowSize, logoPaint)
 
