@@ -2,6 +2,7 @@
 *.aab
 *.ap_
 *.dex
+*.zip
 local.properties
 .idea/
 .gradle/
