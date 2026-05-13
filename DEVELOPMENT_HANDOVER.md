@@ -1,7 +1,7 @@
 # NexusApp 开发总结交接文档
 
 > 编写日期：2026-05-13
-> 项目状态：HTML原型完成，Android Kotlin骨架已搭建，待最终移植整合
+> 项目状态：Android Kotlin核心流程已完成（开屏→登录→主界面），CI构建待最终验证
 
 ---
 
@@ -34,7 +34,7 @@
 | 能量丝带 | 10 | 渐变色多段曲线+末端发光 |
 | 动态火花 | ≤100 | 速度衰减+拖尾线段 |
 
-**后期特效**：核心多层光晕、双层冲击波、Anamorphic镜头光晕、Film Grain胶片颗粒、暗角
+**后期特效**：核心多层光晕、Film Grain胶片颗粒、暗角（已移除体积光线/镜头光晕，用户认为不逼真）
 
 ### 流程2：过渡到登录界面
 - 开屏元素淡出，粒子减弱为背景态
@@ -43,18 +43,18 @@
 ### 流程3：登录界面
 - **唯一登录方式**：管理员邮箱 + 密码
 - **验证凭据**：邮箱=`admin`，密码=`1`
-- **交互**：输入框发光边框聚焦，按钮点击后"验证中..."状态，错误时红色提示
-- **视觉风格**：Cyberpunk主题，切角clip-path，JetBrains Mono/Orbitron字体，#00ff88电光绿主色
+- **交互**：输入框发光边框聚焦，按钮点击后"验证中..."状态，错误时红色提示+抖动
+- **动态Logo**：AnimatedVectorDrawable旋转双环+六边形+核心脉冲
+- **视觉风格**：Cyberpunk主题，切角clip-path，#00ff88电光绿主色
 
 ### 流程4：登录成功过渡
-- 登录框scale(1.05)淡出
-- Canvas层绘制3层绿色冲击波扩散（1.5秒）
-- 主界面淡入
+- 登录框scale(1.05)淡出动画
+- 自动跳转到主界面
 
 ### 流程5：主界面
 - 欢迎文字 + NEXUS大标题 + "控制台已就绪·系统正常"
 - 2×2功能卡片网格：数据面板、任务中心、系统监控、配置管理
-- 卡片逐个上滑入场，hover发光边框
+- 卡片逐个上滑入场动画
 
 ---
 
@@ -66,18 +66,33 @@ E:\NexusApp\
 │   ├── build.gradle.kts          # 应用模块Gradle配置
 │   ├── proguard-rules.pro        # 混淆规则
 │   └── src\main\
-│       ├── AndroidManifest.xml   # 清单（Splash→Main）
+│       ├── AndroidManifest.xml   # 清单（Splash→Login→Main）
 │       ├── java\com\nexus\app\
 │       │   └── ui\
 │       │       ├── splash\
-│       │       │   ├── CgSplashView.kt   # 核心自绘动画View（580行）
+│       │       │   ├── CgSplashView.kt   # 核心自绘动画View
 │       │       │   └── SplashActivity.kt # 开屏Activity
+│       │       ├── login\
+│       │       │   └── LoginActivity.kt  # 登录Activity（admin/1验证）
 │       │       └── main\
-│       │           └── MainActivity.kt   # 主界面Activity
+│       │           └── MainActivity.kt   # 主界面Activity（卡片网格）
 │       └── res\
-│           ├── layout\activity_main.xml
+│           ├── layout\
+│           │   ├── activity_login.xml    # 登录布局
+│           │   └── activity_main.xml     # 主界面卡片布局
+│           ├── anim\
+│           │   ├── avd_rotate_cw.xml     # AVD顺时针旋转
+│           │   ├── avd_rotate_ccw.xml    # AVD逆时针旋转
+│           │   ├── avd_rotate_ccw_slow.xml
+│           │   ├── avd_rotate_cw_slow.xml
+│           │   ├── avd_pulse.xml         # AVD缩放脉冲
+│           │   └── avd_pulse_y.xml       # AVD Y轴缩放
+│           ├── drawable\
+│           │   ├── ic_nexus_logo.xml             # 静态Logo（旧版）
+│           │   ├── ic_nexus_logo_static.xml      # AVD底图
+│           │   ├── ic_nexus_logo_animated.xml    # 动态Logo（AVD）
+│           │   └── ic_launcher_*.xml             # 启动器图标
 │           ├── values\{colors,strings,themes}.xml
-│           ├── drawable\ic_launcher_*.xml
 │           └── mipmap-*/ic_launcher.xml
 ├── build.gradle.kts              # 根Gradle配置
 ├── settings.gradle.kts           # 模块声明
@@ -103,34 +118,27 @@ E:\NexusApp\
 
 | 模块 | HTML原型 | Android Kotlin | 状态 |
 |------|----------|---------------|------|
-| 开屏动画 | ✅ 完整 | ✅ 已移植（粒子优先版） | 需同步HTML最新版 |
-| 登录界面 | ✅ 完整 | ❌ 未实现 | 需新建LoginActivity |
-| 登录逻辑 | ✅ admin/1验证 | ❌ 未实现 | 需实现 |
-| 登录过渡动画 | ✅ 冲击波扩散 | ❌ 未实现 | 需实现 |
-| 主界面 | ✅ 卡片网格 | ✅ 占位 | 需替换为卡片布局 |
-| 动态SVG Logo | ✅ 登录页Logo | ❌ 未实现 | 需用AnimatedVectorDrawable |
+| 开屏动画 | ✅ 完整 | ✅ 已移植 | ✅ 已同步中文文字、移除光线 |
+| 登录界面 | ✅ 完整 | ✅ 已实现 | ✅ Cyberpunk风格+动态Logo |
+| 登录逻辑 | ✅ admin/1验证 | ✅ 已实现 | ✅ 含抖动错误反馈 |
+| 登录过渡动画 | ✅ 冲击波扩散 | ✅ scale淡出 | 简化版（无Canvas冲击波） |
+| 主界面 | ✅ 卡片网格 | ✅ 卡片网格 | ✅ 含入场动画 |
+| 动态SVG Logo | ✅ 旋转环 | ✅ AVD实现 | ✅ 旋转+脉冲 |
 
 ---
 
 ## 六、后续工作清单
 
-### 优先级P0（必做）
-1. **新建LoginActivity** - 参照HTML原型的Cyberpunk风格，实现邮箱+密码登录
-2. **登录验证逻辑** - admin/1校验，错误提示
-3. **主界面布局替换** - 用Material3卡片替换占位TextView
-4. **同步CgSplashView** - 将HTML原型最新的粒子参数同步到Kotlin版
-
 ### 优先级P1（建议）
-5. **登录过渡动画** - 冲击波扩散效果
-6. **动态Logo** - 用AnimatedVectorDrawable实现旋转环+轨道粒子
-7. **主题统一** - 确保所有页面使用统一的Cyberpunk色彩体系（#00ff88/#ff00ff/#00d4ff）
-8. **字体** - 引入Orbitron/JetBrains Mono字体资源
+1. **Canvas冲击波过渡** - 登录成功后在Canvas层绘制3层绿色冲击波扩散（当前仅scale淡出）
+2. **主题统一** - 确保所有页面使用统一的Cyberpunk色彩体系（#00ff88/#ff00ff/#00d4ff）
+3. **字体** - 引入Orbitron/JetBrains Mono字体资源
 
 ### 优先级P2（扩展）
-9. **功能卡片落地** - 数据面板、任务中心、系统监控、配置管理
-10. **导航框架** - Navigation Component + 底部导航栏
-11. **数据层** - Room数据库 + Repository模式
-12. **网络层** - Retrofit + OkHttp
+4. **功能卡片落地** - 数据面板、任务中心、系统监控、配置管理
+5. **导航框架** - Navigation Component + 底部导航栏
+6. **数据层** - Room数据库 + Repository模式
+7. **网络层** - Retrofit + OkHttp
 
 ---
 
@@ -144,18 +152,102 @@ E:\NexusApp\
 | CI构建 | gradle action直接调用 | 绕过wrapper jar缺失问题 |
 | 动画编排 | 时间轴phase映射 | 多阶段重叠，电影叙事感 |
 | 原型验证 | HTML Canvas先行 | 快速迭代，确认效果再移植 |
+| 体积光线 | 移除drawFlare | 用户认为不逼真，偏好粒子为主的效果 |
 
 ---
 
-## 八、已知问题
+## 八、踩坑注意事项（⚠️必读）
+
+> 以下是开发过程中实际踩过的坑，务必避免重复犯错。
+
+### 1. PowerShell 不支持 `&&` 语句分隔符
+- **错误**：`cd E:/NexusApp && git status` → 解析错误
+- **正确**：PowerShell中使用 `;` 连接命令：`cd E:/NexusApp; git status`
+- **注意**：Git Bash环境可用 `&&`，PowerShell不可
+
+### 2. PowerShell 中 `git commit -m` 含中文/空格会解析失败
+- **错误**：`git commit -m "feat: 添加登录界面"` → 中文字符被PowerShell误解析
+- **正确**：使用简短英文commit message：`git commit -m "feat-add-login-ui"`
+- **替代**：Git Bash中HEREDOC语法 `$(cat <<'EOF'...EOF)` 在PowerShell也不可用
+
+### 3. SurfaceView 中 `density` 属性不存在
+- **错误**：`context.density` 编译失败
+- **正确**：`context.resources.displayMetrics.density`
+
+### 4. Kotlin 中 `sin(Long * Float)` 类型陷阱
+- **错误**：`sin(time * 0.003)` 其中 `time` 是 `Long`，`0.003` 是 `Double`，结果为 `Double`，但 `sin()` 在不同上下文返回不同类型
+- **正确**：显式 `.toFloat()`：`sin(time * 0.003f).toFloat()`
+
+### 5. Gradle Wrapper Jar 缺失导致 CI 失败
+- **错误**：直接运行 `./gradlew` 报 `ClassNotFoundException: GradleWrapperMain`
+- **正确**：CI中使用 `gradle/actions/setup-gradle@v4` + `gradle-version: '8.5'` 直接调用 gradle，不依赖 wrapper jar
+- **注意**：本地开发需先执行 `gradle wrapper` 生成 jar
+
+### 6. AndroidManifest 引用的 `mipmap/ic_launcher` 必须提供资源文件
+- **错误**：清单引用了 `@mipmap/ic_launcher` 但无对应资源 → `processDebugResources` 失败
+- **正确**：在 `res/mipmap-*/` 下提供 `ic_launcher.xml`（adaptive icon）
+
+### 7. VectorDrawable 不支持 `android:strokeDashArray` 属性
+- **错误**：在 `<path>` 上使用 `android:strokeDashArray="8 12"` → AAPT报错 `attribute android:strokeDashArray not found`
+- **正确**：VectorDrawable 的 `<path>` **不支持** `strokeDashArray`，只能用实线。虚线效果需用Canvas代码绘制或拆分为多段短path
+- **注意**：SVG/HTML的 `stroke-dasharray` 在Android VectorDrawable中没有等价属性
+
+### 8. VectorDrawable 的 `<path>` 必须有 `android:fillColor`
+- **错误**：仅描边的path省略 `fillColor` → AAPT报错
+- **正确**：所有 `<path>` 必须显式声明 `android:fillColor="#00000000"`（透明填充）表示不填充
+
+### 9. `<group>` 标签不能设置 `strokeColor`/`strokeWidth` 等path属性
+- **错误**：`<group android:strokeColor="#00FF88">` → AAPT报错
+- **正确**：`<group>` 只支持 `name`、`translateX/Y`、`scaleX/Y`、`rotation`、`pivotX/Y`。描边/填充属性必须设在 `<path>` 上
+
+### 10. AnimatedVectorDrawable 的 `<target>` 不支持 `<set>` 动画集
+- **错误**：`<set>` 内含多个 `<objectAnimator>` 用于同一 target → 运行时崩溃或无效
+- **正确**：每个 `<target>` 只能引用一个 `<objectAnimator>`。如需同时动画scaleX和scaleY，需拆分为两个 `<target>` 指向不同动画文件
+
+### 11. API 34+ 的 `RadialGradient` 颜色参数必须是 `Long`/`LongArray`
+- **错误**：`RadialGradient(x, y, r, intColor1, intColor2, tileMode)` → 类型不匹配，推断为 `Int` 但期望 `Long`
+- **正确**：API 34 (compileSdk=34) 中颜色使用 `Long`：
+  - 两色构造：改用多色构造 `RadialGradient(x, y, r, longArrayOf(color1.toLong(), color2.toLong()), floatArrayOf(0f, 1f), tileMode)`
+  - 多色构造：`intArrayOf(...)` 改为 `longArrayOf(...toLong())`
+- **关键**：不要用两色构造函数传 `.toLong()`，Kotlin会将其匹配到多色构造函数（签名歧义），导致"Long但期望LongArray"错误。**统一用 `longArrayOf` + `floatArrayOf` 多色构造函数**
+
+### 12. Kotlin `surfaceChanged` 参数名不能与父方法重复
+- **错误**：`override fun surfaceChanged(h: SurfaceHolder, f: Int, w: Int, h: Int)` → 参数 `h` 冲突
+- **正确**：`override fun surfaceChanged(holder: SurfaceHolder, f: Int, w: Int, h: Int)`
+
+### 13. Kotlin 链式 `withEndAction` 的花括号缩进可能导致解析错误
+- **错误**：
+  ```kotlin
+  view.animate()
+      .translationX(10f).setDuration(50).withEndAction {
+      // Kotlin可能把后续代码解析为链式调用而非lambda内容
+      rootView.animate()...
+      }
+  ```
+- **正确**：将 `withEndAction {` 和 lambda 内容写在同一行或确保花括号紧随方法：
+  ```kotlin
+  rootView.animate().translationX(10f).setDuration(50).withEndAction {
+      rootView.animate().translationX(-10f).setDuration(50).withEndAction {
+          // ...
+      }
+  }
+  ```
+
+### 14. `onBackPressed()` 空实现不能用 `{}` 且不能递归调用自身
+- **错误**：`override fun onBackPressed() { onBackPressed() }` → 无限递归StackOverflow
+- **正确**：`override fun onBackPressed() { /* no-op */ }`
+
+---
+
+## 九、已知问题
 
 1. **Gradle Wrapper Jar缺失** - CI用gradle action绕过，本地开发需执行`gradle wrapper`生成
-2. **CgSplashView与HTML原型不同步** - Kotlin版是早期粒子优先版，未同步最新的登录/主界面流程
-3. **内存优化待做** - 大量粒子在低端设备可能GC压力，需考虑对象池
-4. **横屏适配未处理** - 当前仅竖屏优化
+2. **内存优化待做** - 大量粒子在低端设备可能GC压力，需考虑对象池
+3. **横屏适配未处理** - 当前仅竖屏优化
+4. **CI构建待最终验证** - 最新修复已推送，等待CI确认通过
 
 ---
 
 > 交接人：CodeArts AI Agent
 > 接收人：后续开发团队
-> 文档版本：v1.0
+> 文档版本：v2.0
