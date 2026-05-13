@@ -3,48 +3,125 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>NexusApp</title>
+<title>Nexus</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0f;font-family:"JetBrains Mono","Fira Code","Consolas",monospace}
+html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,"SF Pro Display","Segoe UI","Helvetica Neue",sans-serif}
 canvas{position:fixed;top:0;left:0;z-index:1}
-#login{position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .6s cubic-bezier(.4,0,.2,1)}
+
+/* ===== LOGIN ===== */
+#login{position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;display:flex;align-items:center;justify-content:center;background:#F0F2F5;opacity:0;pointer-events:none;transition:opacity .6s}
 #login.show{opacity:1;pointer-events:auto}
 #login.hide{opacity:0;pointer-events:none;transform:scale(1.05)}
 .login-box{width:min(380px,85vw);padding:0 16px}
 .login-logo{text-align:center;margin-bottom:36px}
-.login-logo svg{width:100px;height:100px;margin-bottom:20px}
-.login-logo h1{font-family:"Orbitron","Share Tech Mono",monospace;font-size:28px;font-weight:700;letter-spacing:8px;color:#00ff88;margin-bottom:6px;text-shadow:0 0 20px rgba(0,255,136,.5),0 0 60px rgba(0,255,136,.2)}
-.login-logo p{font-family:"Share Tech Mono",monospace;font-size:10px;letter-spacing:3px;color:rgba(0,212,255,.5)}
+.login-logo svg{width:80px;height:80px;margin-bottom:20px}
+.login-logo h1{font-size:28px;font-weight:700;letter-spacing:8px;color:#1A1A2E;margin-bottom:6px}
+.login-logo p{font-size:10px;letter-spacing:3px;color:#9E9E9E}
 .field{position:relative;margin-bottom:18px}
-.field input{width:100%;padding:14px 16px 14px 46px;background:rgba(18,18,26,.8);border:1px solid rgba(0,255,136,.12);border-radius:2px;color:#e0e0e0;font-family:"JetBrains Mono","Fira Code",monospace;font-size:14px;outline:none;transition:all 150ms cubic-bezier(.4,0,.2,1);clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))}
-.field input::placeholder{color:rgba(0,255,136,.25);font-family:"Share Tech Mono",monospace}
-.field input:focus{border-color:rgba(0,255,136,.5);background:rgba(18,18,26,.95);box-shadow:0 0 0 1px rgba(0,255,136,.2),0 0 24px rgba(0,255,136,.06)}
-.field .icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:rgba(0,255,136,.35);font-size:16px;pointer-events:none;transition:color 150ms}
-.field input:focus~.icon{color:#00ff88}
-.field::after{content:'';position:absolute;right:0;top:0;width:8px;height:8px;border-top:1px solid rgba(0,255,136,.12);border-right:1px solid rgba(0,255,136,.12);pointer-events:none}
-.btn-login{width:100%;padding:15px;margin-top:6px;background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.3);border-radius:2px;color:#00ff88;font-family:"Orbitron","Share Tech Mono",monospace;font-size:13px;font-weight:600;letter-spacing:4px;cursor:pointer;transition:all 150ms cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))}
-.btn-login:hover{background:rgba(0,255,136,.15);border-color:rgba(0,255,136,.6);box-shadow:0 0 30px rgba(0,255,136,.12),inset 0 0 30px rgba(0,255,136,.04);text-shadow:0 0 12px rgba(0,255,136,.6)}
-.btn-login:active{transform:scale(.97);transition:all 80ms}
+.field input{width:100%;padding:14px 16px 14px 46px;background:#E8E8EC;border:1px solid #E0E0E0;border-radius:8px;color:#1A1A2E;font-size:14px;outline:none;transition:all .15s}
+.field input::placeholder{color:#999}
+.field input:focus{border-color:#1A1A2E;background:#F0F2F5;box-shadow:0 0 0 3px rgba(26,26,46,.08)}
+.field .icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:#999;font-size:16px;pointer-events:none;transition:color .15s}
+.field input:focus~.icon{color:#1A1A2E}
+.btn-login{width:100%;padding:15px;margin-top:6px;background:#1A1A2E;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:600;letter-spacing:4px;cursor:pointer;transition:all .15s}
+.btn-login:hover{background:#2D2D44}
+.btn-login:active{transform:scale(.97)}
 .btn-login:disabled{opacity:.4;cursor:not-allowed}
-.error-msg{text-align:center;color:#ff3366;font-size:12px;margin-top:12px;opacity:0;transition:opacity .3s;font-family:"Share Tech Mono",monospace;letter-spacing:1px}
+.error-msg{text-align:center;color:#E53935;font-size:12px;margin-top:12px;opacity:0;transition:opacity .3s;letter-spacing:1px}
 .error-msg.show{opacity:1}
-@keyframes glitchIn{0%{opacity:0;transform:translateY(10px) skewX(-2deg)}30%{opacity:1;transform:translateY(-2px) skewX(1deg)}60%{transform:translateY(1px) skewX(0deg)}100%{opacity:1;transform:translateY(0) skewX(0)}}
-.login-box>*{opacity:0;animation:glitchIn .4s cubic-bezier(.4,0,.2,1) forwards}
-.login-box>:nth-child(1){animation-delay:.08s}.login-box>:nth-child(2){animation-delay:.16s}.login-box>:nth-child(3){animation-delay:.24s}.login-box>:nth-child(4){animation-delay:.32s}.login-box>:nth-child(5){animation-delay:.38s}
-#main{position:fixed;top:0;left:0;width:100%;height:100%;z-index:3;opacity:0;pointer-events:none;transition:opacity .8s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;align-items:center;justify-content:center}
-#main.show{opacity:1;pointer-events:auto}
-.main-welcome{font-family:"Orbitron","Share Tech Mono",monospace;font-size:14px;letter-spacing:4px;color:rgba(0,255,136,.5);margin-bottom:8px}
-.main-title{font-family:"Orbitron","Share Tech Mono",monospace;font-size:32px;font-weight:700;letter-spacing:6px;color:#00ff88;text-shadow:0 0 20px rgba(0,255,136,.4);margin-bottom:20px}
-.main-sub{font-family:"Share Tech Mono",monospace;font-size:11px;letter-spacing:2px;color:rgba(0,212,255,.4);margin-bottom:40px}
-.main-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:min(340px,80vw)}
-.main-card{background:rgba(18,18,26,.7);border:1px solid rgba(0,255,136,.1);padding:20px 16px;text-align:center;cursor:pointer;transition:all 150ms cubic-bezier(.4,0,.2,1);clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))}
-.main-card:hover{border-color:rgba(0,255,136,.35);background:rgba(0,255,136,.05);box-shadow:0 0 20px rgba(0,255,136,.06)}
-.main-card .card-icon{font-size:22px;margin-bottom:8px;color:#00ff88}
-.main-card .card-label{font-family:"Share Tech Mono",monospace;font-size:10px;letter-spacing:2px;color:rgba(0,255,136,.6)}
-@keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.main-card{opacity:0;animation:cardIn .4s ease forwards}
-.main-card:nth-child(1){animation-delay:.1s}.main-card:nth-child(2){animation-delay:.18s}.main-card:nth-child(3){animation-delay:.26s}.main-card:nth-child(4){animation-delay:.34s}
+.remember{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:12px;color:#666;cursor:pointer;user-select:none}
+.remember input{accent-color:#1A1A2E}
+@keyframes glitchIn{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+.login-box>*{opacity:0;animation:glitchIn .4s ease forwards}
+.login-box>:nth-child(1){animation-delay:.08s}.login-box>:nth-child(2){animation-delay:.16s}.login-box>:nth-child(3){animation-delay:.24s}.login-box>:nth-child(4){animation-delay:.32s}.login-box>:nth-child(5){animation-delay:.36s}.login-box>:nth-child(6){animation-delay:.4s}
+
+/* ===== MAIN APP ===== */
+#app{position:fixed;top:0;left:0;width:100%;height:100%;z-index:3;opacity:0;pointer-events:none;transition:opacity .5s;background:#F0F2F5;display:flex;flex-direction:column}
+#app.show{opacity:1;pointer-events:auto}
+
+/* Top Bar */
+.topbar{height:56px;background:#fff;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid #E8E8EC;flex-shrink:0;z-index:10}
+.topbar-avatar{width:36px;height:36px;border-radius:50%;background:#1A1A2E;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;cursor:pointer;margin-right:12px;flex-shrink:0}
+.topbar-title{flex:1;font-size:18px;font-weight:600;color:#1A1A2E}
+.topbar-actions{display:flex;gap:16px;color:#666;font-size:18px}
+.topbar-actions span{cursor:pointer}
+
+/* Content Area */
+.content{flex:1;overflow-y:auto;padding:16px}
+.page{display:none}
+.page.active{display:block}
+
+/* Page: Messages */
+.msg-list{display:flex;flex-direction:column;gap:1px;background:#fff;border-radius:12px;overflow:hidden}
+.msg-item{display:flex;align-items:center;padding:14px 16px;gap:12px;cursor:pointer;transition:background .1s}
+.msg-item:hover{background:#F0F2F5}
+.msg-item:active{background:#E8E8EC}
+.msg-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#1A1A2E,#8B5CF6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;flex-shrink:0}
+.msg-info{flex:1;min-width:0}
+.msg-name{font-size:15px;font-weight:500;color:#1A1A2E;margin-bottom:2px}
+.msg-preview{font-size:13px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msg-meta{text-align:right;flex-shrink:0}
+.msg-time{font-size:11px;color:#BBB;margin-bottom:4px}
+.msg-badge{display:inline-block;background:#E53935;color:#fff;font-size:10px;border-radius:10px;padding:1px 6px;min-width:16px;text-align:center}
+
+/* Page: Contacts */
+.contact-section{margin-bottom:16px}
+.contact-section-title{font-size:12px;color:#999;padding:8px 0;letter-spacing:1px}
+.contact-item{display:flex;align-items:center;padding:10px 0;gap:12px;cursor:pointer}
+.contact-avatar{width:40px;height:40px;border-radius:50%;background:#E8E8EC;display:flex;align-items:center;justify-content:center;color:#666;font-size:16px;flex-shrink:0}
+.contact-name{font-size:15px;color:#1A1A2E}
+
+/* Page: Discovery */
+.disc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.disc-card{background:#fff;border-radius:12px;padding:24px 16px;text-align:center;cursor:pointer;transition:all .15s;border:1px solid #E8E8EC}
+.disc-card:hover{border-color:#CCC;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.disc-card:active{transform:scale(.97)}
+.disc-icon{font-size:28px;margin-bottom:8px}
+.disc-label{font-size:12px;color:#666;letter-spacing:1px}
+
+/* Page: Profile */
+.profile-card{background:#fff;border-radius:12px;padding:24px;text-align:center;margin-bottom:16px}
+.profile-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#1A1A2E,#8B5CF6);display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:700;margin-bottom:12px}
+.profile-name{font-size:18px;font-weight:600;color:#1A1A2E;margin-bottom:4px}
+.profile-id{font-size:12px;color:#999}
+.profile-stats{display:flex;justify-content:center;gap:32px;margin-top:16px}
+.stat-item{text-align:center}
+.stat-num{font-size:16px;font-weight:600;color:#1A1A2E}
+.stat-label{font-size:11px;color:#999}
+.profile-menu{background:#fff;border-radius:12px;overflow:hidden}
+.menu-item{display:flex;align-items:center;padding:14px 16px;gap:12px;cursor:pointer;transition:background .1s;border-bottom:1px solid #F0F2F5}
+.menu-item:last-child{border-bottom:none}
+.menu-item:hover{background:#F0F2F5}
+.menu-icon{font-size:18px;color:#666;width:24px;text-align:center}
+.menu-text{flex:1;font-size:14px;color:#1A1A2E}
+.menu-arrow{color:#CCC;font-size:12px}
+
+/* Bottom Navigation */
+.bottomnav{height:56px;background:#fff;display:flex;border-top:1px solid #E8E8EC;flex-shrink:0}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:color .15s;color:#999;gap:2px;position:relative}
+.nav-item.active{color:#1A1A2E}
+.nav-icon{font-size:20px}
+.nav-label{font-size:10px}
+.nav-badge{position:absolute;top:6px;right:calc(50% - 18px);background:#E53935;color:#fff;font-size:9px;border-radius:8px;padding:0 5px;min-width:14px;height:14px;display:flex;align-items:center;justify-content:center}
+
+/* Sidebar */
+.sidebar-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:20;opacity:0;pointer-events:none;transition:opacity .3s}
+.sidebar-overlay.show{opacity:1;pointer-events:auto}
+.sidebar{position:fixed;top:0;left:-280px;width:280px;height:100%;background:#fff;z-index:21;transition:left .3s;display:flex;flex-direction:column}
+.sidebar.open{left:0}
+.sidebar-header{padding:20px;border-bottom:1px solid #F0F2F5;display:flex;align-items:center;gap:12px}
+.sidebar-avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#1A1A2E,#8B5CF6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;flex-shrink:0}
+.sidebar-info{flex:1}
+.sidebar-name{font-size:16px;font-weight:600;color:#1A1A2E}
+.sidebar-status{font-size:12px;color:#999;margin-top:2px}
+.sidebar-menu{flex:1;overflow-y:auto;padding:8px 0}
+.sidebar-item{display:flex;align-items:center;padding:12px 20px;gap:14px;cursor:pointer;transition:background .1s;color:#1A1A2E;font-size:14px}
+.sidebar-item:hover{background:#F0F2F5}
+.sidebar-item .s-icon{font-size:18px;color:#666;width:24px;text-align:center}
+.sidebar-footer{padding:12px 20px;border-top:1px solid #F0F2F5}
+.sidebar-item.danger{color:#E53935}
+.sidebar-item.danger .s-icon{color:#E53935}
 </style>
 </head>
 <body>
@@ -54,30 +131,11 @@ canvas{position:fixed;top:0;left:0;z-index:1}
   <div class="login-box">
     <div class="login-logo">
       <svg viewBox="0 0 200 200" fill="none">
-        <defs>
-          <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-          <filter id="glow2"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-        </defs>
         <g transform="translate(100,100)">
-          <circle r="62" stroke="#00ff88" stroke-width=".6" fill="none" opacity=".15" stroke-dasharray="8 12"><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="20s" repeatCount="indefinite"/></circle>
-          <circle r="52" stroke="#00d4ff" stroke-width=".5" fill="none" opacity=".12" stroke-dasharray="5 15"><animateTransform attributeName="transform" type="rotate" from="360" to="0" dur="15s" repeatCount="indefinite"/></circle>
-          <polygon points="0,-42 36.4,-21 36.4,21 0,42 -36.4,21 -36.4,-21" stroke="#00ff88" stroke-width="1.2" fill="none" opacity=".5" filter="url(#glow)"><animateTransform attributeName="transform" type="rotate" from="0" to="-360" dur="30s" repeatCount="indefinite"/></polygon>
-          <polygon points="0,-22 19,-11 19,11 0,22 -19,11 -19,-11" stroke="#ff00ff" stroke-width="1" fill="none" opacity=".4"><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="12s" repeatCount="indefinite"/></polygon>
-          <g opacity=".25" stroke="#00ff88" stroke-width=".4">
-            <line x1="0" y1="-42" x2="0" y2="-22"><animateTransform attributeName="transform" type="rotate" from="0" to="-360" dur="30s" repeatCount="indefinite"/></line>
-            <line x1="36.4" y1="-21" x2="19" y2="-11"><animateTransform attributeName="transform" type="rotate" from="0" to="-360" dur="30s" repeatCount="indefinite"/></line>
-            <line x1="36.4" y1="21" x2="19" y2="11"><animateTransform attributeName="transform" type="rotate" from="0" to="-360" dur="30s" repeatCount="indefinite"/></line>
-            <line x1="0" y1="42" x2="0" y2="22"><animateTransform attributeName="transform" type="rotate" from="0" to="-360" dur="30s" repeatCount="indefinite"/></line>
-            <line x1="-36.4" y1="21" x2="-19" y2="11"><animateTransform attributeName="transform" type="rotate" from="0" to="-360" dur="30s" repeatCount="indefinite"/></line>
-            <line x1="-36.4" y1="-21" x2="-19" y2="-11"><animateTransform attributeName="transform" type="rotate" from="0" to="-360" dur="30s" repeatCount="indefinite"/></line>
-          </g>
-          <circle r="2.5" fill="#00ff88" opacity=".8" filter="url(#glow)"><animateMotion path="M0,0 m-52,0 a52,52 0 1,1 104,0 a52,52 0 1,1 -104,0" dur="6s" repeatCount="indefinite"/></circle>
-          <circle r="2" fill="#00d4ff" opacity=".6" filter="url(#glow)"><animateMotion path="M0,0 m-52,0 a52,52 0 1,1 104,0 a52,52 0 1,1 -104,0" dur="6s" begin="-2s" repeatCount="indefinite"/></circle>
-          <circle r="1.5" fill="#ff00ff" opacity=".5" filter="url(#glow)"><animateMotion path="M0,0 m-52,0 a52,52 0 1,1 104,0 a52,52 0 1,1 -104,0" dur="6s" begin="-4s" repeatCount="indefinite"/></circle>
-          <line x1="-50" y1="0" x2="50" y2="0" stroke="#00ff88" stroke-width=".8" opacity=".2"><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="4s" repeatCount="indefinite"/></line>
-          <circle r="8" fill="#00ff88" opacity=".15" filter="url(#glow2)"><animate attributeName="r" values="8;12;8" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values=".15;.08;.15" dur="2s" repeatCount="indefinite"/></circle>
-          <circle r="5" fill="#00ff88" opacity=".9" filter="url(#glow)"><animate attributeName="r" values="5;6;5" dur="2s" repeatCount="indefinite"/></circle>
-          <circle r="2" fill="#ffffff" opacity=".95"><animate attributeName="opacity" values=".95;.7;.95" dur="2s" repeatCount="indefinite"/></circle>
+          <polygon points="0,-42 36.4,-21 36.4,21 0,42 -36.4,21 -36.4,-21" stroke="#1A1A2E" stroke-width="2" fill="none"/>
+          <polygon points="0,-22 19,-11 19,11 0,22 -19,11 -19,-11" stroke="#8B5CF6" stroke-width="1.5" fill="none"/>
+          <circle r="5" fill="#1A1A2E"/>
+          <circle r="2" fill="#fff"/>
         </g>
       </svg>
       <h1>NEXUS</h1>
@@ -91,20 +149,95 @@ canvas{position:fixed;top:0;left:0;z-index:1}
       <input id="inputPwd" type="password" placeholder="登录密码" autocomplete="current-password"/>
       <span class="icon">◈</span>
     </div>
+    <label class="remember"><input type="checkbox" id="rememberMe" checked/> 记住登录状态</label>
     <button class="btn-login" id="btnLogin" onclick="doLogin()">登 录</button>
     <div class="error-msg" id="errMsg">验证失败 · 权限拒绝</div>
   </div>
 </div>
 
-<div id="main">
-  <div class="main-welcome">WELCOME_BACK_</div>
-  <div class="main-title">NEXUS</div>
-  <div class="main-sub">控制台已就绪 · 系统正常</div>
-  <div class="main-grid">
-    <div class="main-card"><div class="card-icon">◈</div><div class="card-label">数据面板</div></div>
-    <div class="main-card"><div class="card-icon">▸</div><div class="card-label">任务中心</div></div>
-    <div class="main-card"><div class="card-icon">◉</div><div class="card-label">系统监控</div></div>
-    <div class="main-card"><div class="card-icon">△</div><div class="card-label">配置管理</div></div>
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-avatar" onclick="toggleSidebar()">N</div>
+    <div class="topbar-title" id="topbarTitle">消息</div>
+    <div class="topbar-actions">
+      <span>⊕</span>
+      <span>⋯</span>
+    </div>
+  </div>
+  <div class="content">
+    <div class="page active" id="pageMsg">
+      <div class="msg-list">
+        <div class="msg-item"><div class="msg-avatar">系</div><div class="msg-info"><div class="msg-name">系统通知</div><div class="msg-preview">登录成功，欢迎使用Nexus</div></div><div class="msg-meta"><div class="msg-time">刚刚</div><div class="msg-badge">1</div></div></div>
+        <div class="msg-item"><div class="msg-avatar">安</div><div class="msg-info"><div class="msg-name">安全中心</div><div class="msg-preview">ROOT权限已授权</div></div><div class="msg-meta"><div class="msg-time">10:30</div></div></div>
+        <div class="msg-item"><div class="msg-avatar">数</div><div class="msg-info"><div class="msg-name">数据服务</div><div class="msg-preview">同步完成，共128条记录</div></div><div class="msg-meta"><div class="msg-time">09:15</div></div></div>
+        <div class="msg-item"><div class="msg-avatar">任</div><div class="msg-info"><div class="msg-name">任务调度</div><div class="msg-preview">3个任务执行中...</div></div><div class="msg-meta"><div class="msg-time">昨天</div></div></div>
+      </div>
+    </div>
+    <div class="page" id="pageContact">
+      <div class="contact-section"><div class="contact-section-title">系统服务</div>
+        <div class="contact-item"><div class="contact-avatar">⚡</div><div class="contact-name">权限管理</div></div>
+        <div class="contact-item"><div class="contact-avatar">🔧</div><div class="contact-name">系统配置</div></div>
+        <div class="contact-item"><div class="contact-avatar">📊</div><div class="contact-name">数据面板</div></div>
+      </div>
+      <div class="contact-section"><div class="contact-section-title">在线设备</div>
+        <div class="contact-item"><div class="contact-avatar">📱</div><div class="contact-name">本机设备</div></div>
+      </div>
+    </div>
+    <div class="page" id="pageDiscover">
+      <div class="disc-grid">
+        <div class="disc-card"><div class="disc-icon">📊</div><div class="disc-label">数据面板</div></div>
+        <div class="disc-card"><div class="disc-icon">⚡</div><div class="disc-label">任务中心</div></div>
+        <div class="disc-card"><div class="disc-icon">🔧</div><div class="disc-label">系统监控</div></div>
+        <div class="disc-card"><div class="disc-icon">🛡</div><div class="disc-label">安全中心</div></div>
+        <div class="disc-card"><div class="disc-icon">📂</div><div class="disc-label">文件管理</div></div>
+        <div class="disc-card"><div class="disc-icon">⚙</div><div class="disc-label">高级设置</div></div>
+      </div>
+    </div>
+    <div class="page" id="pageProfile">
+      <div class="profile-card">
+        <div class="profile-avatar">N</div>
+        <div class="profile-name">Admin</div>
+        <div class="profile-id">ID: root@nexus</div>
+        <div class="profile-stats">
+          <div class="stat-item"><div class="stat-num">128</div><div class="stat-label">数据</div></div>
+          <div class="stat-item"><div class="stat-num">3</div><div class="stat-label">任务</div></div>
+          <div class="stat-item"><div class="stat-num">99%</div><div class="stat-label">在线</div></div>
+        </div>
+      </div>
+      <div class="profile-menu">
+        <div class="menu-item"><span class="menu-icon">🛡</span><span class="menu-text">ROOT权限管理</span><span class="menu-arrow">›</span></div>
+        <div class="menu-item"><span class="menu-icon">🔧</span><span class="menu-text">系统配置</span><span class="menu-arrow">›</span></div>
+        <div class="menu-item"><span class="menu-icon">📊</span><span class="menu-text">运行状态</span><span class="menu-arrow">›</span></div>
+        <div class="menu-item"><span class="menu-icon">📂</span><span class="menu-text">存储管理</span><span class="menu-arrow">›</span></div>
+        <div class="menu-item"><span class="menu-icon">⚙</span><span class="menu-text">高级设置</span><span class="menu-arrow">›</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="bottomnav">
+    <div class="nav-item active" data-page="pageMsg" onclick="switchPage('pageMsg','消息',this)"><span class="nav-icon">💬</span><span class="nav-label">消息</span><span class="nav-badge">1</span></div>
+    <div class="nav-item" data-page="pageContact" onclick="switchPage('pageContact','通讯录',this)"><span class="nav-icon">📋</span><span class="nav-label">通讯录</span></div>
+    <div class="nav-item" data-page="pageDiscover" onclick="switchPage('pageDiscover','发现',this)"><span class="nav-icon">🔍</span><span class="nav-label">发现</span></div>
+    <div class="nav-item" data-page="pageProfile" onclick="switchPage('pageProfile','我的',this)"><span class="nav-icon">👤</span><span class="nav-label">我的</span></div>
+  </div>
+</div>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-avatar">N</div>
+    <div class="sidebar-info"><div class="sidebar-name">Admin</div><div class="sidebar-status">● 在线 · ROOT</div></div>
+  </div>
+  <div class="sidebar-menu">
+    <div class="sidebar-item"><span class="s-icon">🌙</span>深色模式</div>
+    <div class="sidebar-item"><span class="s-icon">🛡</span>权限管理</div>
+    <div class="sidebar-item"><span class="s-icon">📊</span>数据面板</div>
+    <div class="sidebar-item"><span class="s-icon">📂</span>文件管理</div>
+    <div class="sidebar-item"><span class="s-icon">⚙</span>系统设置</div>
+    <div class="sidebar-item"><span class="s-icon">🔧</span>开发者选项</div>
+    <div class="sidebar-item"><span class="s-icon">ℹ</span>关于Nexus</div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="sidebar-item danger" onclick="doLogout()"><span class="s-icon">⏻</span>退出登录</div>
   </div>
 </div>
 
@@ -116,31 +249,50 @@ addEventListener('resize',resize);resize();
 const TAU=Math.PI*2,rand=(a=0,b=1)=>a+Math.random()*(b-a),rI=(a,b)=>Math.floor(rand(a,b+1));
 const cl=(v,a,b)=>Math.max(a,Math.min(b,v)),lr=(a,b,t)=>a+(b-a)*t;
 const ease=t=>{t=cl(t,0,1);return t<.5?4*t*t*t:1-(-2*t+2)**3/2};
-
 const SL=[{n:400,px:.3,sz:[.08,.6],a:[.01,.25]},{n:150,px:.6,sz:[.3,1.2],a:[.03,.35]},{n:50,px:1,sz:[.8,2.2],a:[.06,.45]}].map(l=>({...l,stars:Array.from({length:l.n},()=>({x:rand(),y:rand(),s:rand()**2*(l.sz[1]-l.sz[0])+l.sz[0],a:rand()*(l.a[1]-l.a[0])+l.a[0],tw:rand(.4,4),to:rand(0,TAU),temp:rand()}))}));
 const DUST=Array.from({length:120},()=>{const colors=[[0,180,255],[60,100,255],[0,255,180],[180,140,255],[140,50,255]];const c=colors[rI(0,colors.length-1)];return{x:rand(0,W),y:rand(0,H),px:0,py:0,s:rand(1,3.5),a:0,vx:(rand()-.5)*10,vy:(rand()-.5)*10,nOff:rand(0,100),cr:c[0],cg:c[1],cb:c[2]};});
-const ORBS=Array.from({length:80},()=>{const colors=[[0,220,255],[50,80,255],[120,50,255],[0,255,200]];const c=colors[rI(0,colors.length-1)];return{angle:rand(0,TAU),dist:rand(.3,1.3),x:0,y:0,px:0,py:0,s:rand(1,4),a:0,spd:rand(30,120),spiral:rand(-2,2),wobble:rand(0,1.5),wOff:rand(0,TAU),cr:c[0],cg:c[1],cb:c[2]};});
-const RIBBONS=Array.from({length:6},()=>{const swap=rand()<.5;return{baseA:rand(0,TAU),dist:rand(.3,.7),spd:rand(20,60),spiralR:rand(1.2,2.5),segs:rI(15,22),w:rand(.6,1.5),c1:swap?[120,45,255]:[0,190,255],c2:swap?[0,190,255]:[120,45,255],pts:[],a:0,off:rand(0,100)};});
-
 let sparks=[],t0=0,splashDone=false,loginShown=false,loggedIn=false;
 const SPLASH_DUR=6200;
 
-// ===== LOGIN LOGIC =====
+// Auto-login check
+const savedLogin=localStorage.getItem('nexus_logged_in');
+if(savedLogin==='true'){splashDone=true;loginShown=true;loggedIn=true;document.getElementById('login').classList.add('hide');setTimeout(()=>{document.getElementById('app').classList.add('show');},100);}
+
 function doLogin(){
   const email=document.getElementById('inputEmail').value.trim();
   const pwd=document.getElementById('inputPwd').value;
   const btn=document.getElementById('btnLogin');
   const err=document.getElementById('errMsg');
+  const remember=document.getElementById('rememberMe').checked;
   btn.disabled=true;btn.textContent='验证中...';err.classList.remove('show');
   setTimeout(()=>{
     if(email==='admin'&&pwd==='1'){
       loggedIn=true;
+      if(remember)localStorage.setItem('nexus_logged_in','true');
       document.getElementById('login').classList.add('hide');
-      setTimeout(()=>{document.getElementById('main').classList.add('show');},600);
+      setTimeout(()=>{document.getElementById('app').classList.add('show');},600);
     }else{
       err.classList.add('show');btn.disabled=false;btn.textContent='登 录';
     }
   },800);
+}
+
+function doLogout(){
+  localStorage.removeItem('nexus_logged_in');
+  location.reload();
+}
+
+function switchPage(pageId,title,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('topbarTitle').textContent=title;
+}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
 }
 
 function draw(t){
@@ -150,50 +302,29 @@ function draw(t){
   const transP=splashDone?cl((el-(SPLASH_DUR+400))/800,0,1):0;
   const splashFade=splashDone?1-ease(transP):1;
   if(p>=1&&!splashDone){splashDone=true;}
-  if(splashDone&&!loginShown&&el>SPLASH_DUR+600){loginShown=true;document.getElementById('login').classList.add('show');}
+  if(splashDone&&!loginShown&&!loggedIn&&el>SPLASH_DUR+600){loginShown=true;document.getElementById('login').classList.add('show');}
 
   X.globalCompositeOperation='source-over';
-  const bg=X.createRadialGradient(cx,cy,0,cx,cy,R*1.6);bg.addColorStop(0,'#060a1a');bg.addColorStop(.6,'#030512');bg.addColorStop(1,'#01020a');X.fillStyle=bg;X.fillRect(0,0,W,H);
-
+  const bg=X.createRadialGradient(cx,cy,0,cx,cy,R*1.6);bg.addColorStop(0,'#1a1a2e');bg.addColorStop(.6,'#15152a');bg.addColorStop(1,'#0f0f1e');X.fillStyle=bg;X.fillRect(0,0,W,H);
   X.globalCompositeOperation='screen';
   [[-.28,-.22,.38,[10,5,40]],[.22,.18,.32,[18,3,28]],[.05,-.28,.28,[5,12,35]]].forEach(([ox,oy,sz,c],i)=>{const nx=cx+ox*R+Math.sin(el*.00012+i*2)*R*.03;const ny=cy+oy*R+Math.cos(el*.0001+i*2)*R*.025;const nr=R*sz*(.8+pG*.2);const na=(splashDone?.06:pG*.08)+Math.sin(el*.0008+i*1.5)*.012;const g=X.createRadialGradient(nx,ny,0,nx,ny,nr);g.addColorStop(0,`rgba(${c[0]},${c[1]},${c[2]},${cl(na,0,.1)})`);g.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=g;X.fillRect(nx-nr,ny-nr,nr*2,nr*2);});
-
   X.globalCompositeOperation='lighter';
   const dX=Math.sin(el*.00007)*R*.015,dY=Math.cos(el*.00005)*R*.012;
-  SL.forEach(l=>{const px=dX*l.px,py=dY*l.px;l.stars.forEach(s=>{const sx=((s.x*W+px)%W+W)%W,sy=((s.y*H+py)%H+H)%H;const tw=.35+.65*(Math.sin(el*.001*s.tw+s.to)*.5+.5);const a=s.a*tw*(splashDone?.7:pG);if(a<.01)return;const r2=Math.round(lr(170,255,s.temp)),g2=Math.round(lr(180,255,s.temp)),b2=Math.round(lr(210,255,s.temp));X.fillStyle=`rgba(${r2},${g2},${b2},${a})`;X.beginPath();X.arc(sx,sy,s.s,0,TAU);X.fill();if(s.s>1&&a>.1){const gr=X.createRadialGradient(sx,sy,0,sx,sy,s.s*3.5);gr.addColorStop(0,`rgba(${r2},${g2},${b2},${a*.08})`);gr.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=gr;X.fillRect(sx-s.s*3.5,sy-s.s*3.5,s.s*7,s.s*7);}});});
-
+  SL.forEach(l=>{const px=dX*l.px,py=dY*l.px;l.stars.forEach(s=>{const sx=((s.x*W+px)%W+W)%W,sy=((s.y*H+py)%H+H)%H;const tw=.35+.65*(Math.sin(el*.001*s.tw+s.to)*.5+.5);const a=s.a*tw*(splashDone?.7:pG);if(a<.01)return;const r2=Math.round(lr(170,255,s.temp)),g2=Math.round(lr(180,255,s.temp)),b2=Math.round(lr(210,255,s.temp));X.fillStyle=`rgba(${r2},${g2},${b2},${a})`;X.beginPath();X.arc(sx,sy,s.s,0,TAU);X.fill();});});
   X.globalCompositeOperation='lighter';
   DUST.forEach(d=>{d.px=d.x;d.py=d.y;d.x+=(d.vx+Math.sin(el*.002+d.nOff)*6)*dt;d.y+=(d.vy+Math.cos(el*.0017+d.nOff)*4)*dt;if(!splashDone&&p>.1){const pull=(p-.1)*.4;const dx=cx-d.x,dy=cy-d.y,di=Math.hypot(dx,dy);if(di>R*.05){d.x+=dx/di*pull*15*dt;d.y+=dy/di*pull*15*dt;}}d.a=splashDone?.15:(p<.06?p/.06*.25:.25*(1-p*.15));if(d.a<.01)return;const ai=Math.round(d.a*255);const tLen=Math.hypot(d.x-d.px,d.y-d.py);if(tLen>.4){X.strokeStyle=`rgba(${d.cr},${d.cg},${d.cb},${Math.round(ai*.2)})`;X.lineWidth=d.s*.35;X.lineCap='round';X.beginPath();X.moveTo(d.px,d.py);X.lineTo(d.x,d.y);X.stroke();}const gr=X.createRadialGradient(d.x,d.y,0,d.x,d.y,d.s);gr.addColorStop(0,`rgba(${d.cr},${d.cg},${d.cb},${ai})`);gr.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=gr;X.fillRect(d.x-d.s,d.y-d.s,d.s*2,d.s*2);});
 
-  if(!splashDone){
-    X.globalCompositeOperation='lighter';
-    ORBS.forEach(o=>{o.px=o.x;o.py=o.y;if(p<.05){o.a=0;return;}const dR=o.dist*R;o.angle+=(o.spd/Math.max(dR,1)+o.spiral)*dt;o.dist-=o.spd*dt*pArc*.5/R;o.dist+=Math.sin(el*.005+o.wOff)*o.wobble*.002;if(o.dist<R*.04/R){o.dist=rand(.3,1.2);o.angle=rand(0,TAU);o.a=0;return;}o.x=cx+Math.cos(o.angle)*o.dist*R;o.y=cy+Math.sin(o.angle)*o.dist*R;o.a=Math.min((p-.05)/.1,1)*(.12+(1-o.dist/1.3)*.5);o.s=1+(1-o.dist/1.3)*3.5;if(o.a<.02)return;const ai=Math.round(o.a*255);const td=Math.hypot(o.x-o.px,o.y-o.py);if(td>1){const gr2=X.createRadialGradient(o.px,o.py,0,o.px,o.py,o.s*.6);gr2.addColorStop(0,`rgba(${o.cr},${o.cg},${o.cb},${Math.round(ai*.15)})`);gr2.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=gr2;X.fillRect(o.px-o.s*.6,o.py-o.s*.6,o.s*1.2,o.s*1.2);}const gr=X.createRadialGradient(o.x,o.y,0,o.x,o.y,o.s);gr.addColorStop(0,`rgba(${o.cr},${o.cg},${o.cb},${ai})`);gr.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=gr;X.fillRect(o.x-o.s,o.y-o.s,o.s*2,o.s*2);});
-    RIBBONS.forEach(rb=>{if(p<.12||p>.65){rb.a=0;return;}rb.a=Math.sin((p-.12)/.53*Math.PI)*.45;const dist2=rb.dist*R*(1-pArc*.3);rb.baseA+=rb.spiralR*dt;rb.pts=[];let a2=rb.baseA,d=dist2;for(let i=0;i<rb.segs;i++){rb.pts.push([cx+Math.cos(a2)*d,cy+Math.sin(a2)*d]);a2+=.18+Math.sin(el*.003+i*.4+rb.off)*.05;d-=dist2*.028;}for(let i=1;i<rb.pts.length;i++){const t=i/rb.pts.length,sa=rb.a*t;if(sa<.005)continue;X.strokeStyle=`rgba(${Math.round(lr(rb.c1[0],rb.c2[0],t))},${Math.round(lr(rb.c1[1],rb.c2[1],t))},${Math.round(lr(rb.c1[2],rb.c2[2],t))},${sa})`;X.lineWidth=rb.w*(.2+.8*t);X.lineCap='round';X.beginPath();X.moveTo(rb.pts[i-1][0],rb.pts[i-1][1]);X.lineTo(rb.pts[i][0],rb.pts[i][1]);X.stroke();}});
-    if(pG>.01){const cR=R*.04*pG*(1+Math.sin(el*.003)*.1);[[cR*14,.02],[cR*7,.04],[cR*3.5,.1],[cR*1.8,.22],[cR,.38]].forEach(([r,a])=>{const g=X.createRadialGradient(cx,cy,0,cx,cy,r);g.addColorStop(0,`rgba(0,185,255,${pG*a})`);g.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=g;X.fillRect(cx-r,cy-r,r*2,r*2);});const cg=X.createRadialGradient(cx,cy,0,cx,cy,cR);cg.addColorStop(0,`rgba(230,248,255,${pG*.85})`);cg.addColorStop(.3,`rgba(0,215,255,${pG*.45})`);cg.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=cg;X.beginPath();X.arc(cx,cy,cR,0,TAU);X.fill();}
-    if(p>.25&&p<.55&&sparks.length<80&&Math.random()<.3){for(let i=0;i<2;i++)sparks.push({x:cx+rand(-12,12),y:cy+rand(-12,12),vx:rand(-250,250),vy:rand(-250,250),s:rand(.3,2),life:1,decay:rand(1,2.2),cr:rI(0,80),cg:rI(180,255),cb:rI(200,255)});}
-    sparks.forEach(s=>{s.x+=s.vx*dt;s.y+=s.vy*dt;s.vx*=.96;s.vy*=.96;s.life-=s.decay*dt;});sparks=sparks.filter(s=>s.life>0);
-    sparks.forEach(s=>{const g=X.createRadialGradient(s.x,s.y,0,s.x,s.y,s.s*2);g.addColorStop(0,`rgba(${s.cr},${s.cg},${s.cb},${s.life*.4})`);g.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=g;X.fillRect(s.x-s.s*2,s.y-s.s*2,s.s*4,s.s*4);});
-  }
-
   if(!splashDone||splashFade>0){
     const sf=splashFade;
-    if(pLogo>.01){const sz=R*.13,sc=.3+.7*pLogo,rot=el*.0005;X.save();X.globalAlpha=sf;X.translate(cx,cy);X.scale(sc,sc);const hex=(size,off=0)=>{X.beginPath();for(let i=0;i<6;i++){const a=Math.PI/3*i-Math.PI/6+off;i===0?X.moveTo(Math.cos(a)*size,Math.sin(a)*size):X.lineTo(Math.cos(a)*size,Math.sin(a)*size);}X.closePath();};X.globalCompositeOperation='lighter';X.save();X.rotate(-rot*6%TAU);X.strokeStyle=`rgba(0,170,255,${pLogo*.12})`;X.lineWidth=.5;hex(sz*1.3);X.stroke();X.restore();X.save();X.rotate(rot*10%TAU);X.strokeStyle=`rgba(70,40,180,${pLogo*.15})`;X.lineWidth=.5;hex(sz*1.12,Math.PI/6);X.stroke();X.restore();X.globalCompositeOperation='source-over';X.strokeStyle=`rgba(0,220,255,${pLogo*.85})`;X.lineWidth=1.8;X.lineJoin='round';hex(sz);X.stroke();X.fillStyle=`rgba(0,180,255,${pLogo*.04})`;X.fill();X.save();X.rotate(rot*18%TAU);X.strokeStyle=`rgba(120,65,255,${pLogo*.6})`;X.lineWidth=1.3;hex(sz*.48);X.stroke();X.restore();X.globalCompositeOperation='lighter';const cR2=sz*.1;[[cR2*5,.08],[cR2*2.5,.25],[cR2*1.2,.6]].forEach(([r,a])=>{const g=X.createRadialGradient(0,0,0,0,0,r);g.addColorStop(0,`rgba(0,200,255,${pLogo*a})`);g.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=g;X.fillRect(-r,-r,r*2,r*2);});const cg=X.createRadialGradient(0,0,0,0,0,cR2);cg.addColorStop(0,`rgba(210,245,255,${pLogo*.9})`);cg.addColorStop(1,'rgba(0,180,255,0)');X.fillStyle=cg;X.beginPath();X.arc(0,0,cR2,0,TAU);X.fill();X.restore();X.globalAlpha=1;}
-    if(pText>.01){X.save();X.globalAlpha=sf;const tsz=R*.052,ty=cy+R*.24;X.font=`bold ${tsz}px "SF Pro Display","Segoe UI",system-ui,sans-serif`;X.textAlign='center';X.textBaseline='middle';const title='NEXUS',tw=X.measureText(title).width,sx2=cx-tw/2,cw=tw/title.length;for(let i=0;i<title.length;i++){const cp=cl((pText-i*.06)/.25,0,1);if(cp<=0)continue;X.fillStyle=`rgba(0,225,255,${cp*.9})`;X.fillText(title[i],sx2+i*cw+cw/2,ty);}const sp2=cl((pText-.25)/.35,0,1);if(sp2>.01){const ssz=tsz*.28;X.font=`${ssz}px "SF Pro Display","Segoe UI",system-ui,sans-serif`;X.fillStyle=`rgba(110,65,255,${sp2*.6})`;X.fillText('初始化系统',cx,ty+tsz*1.15);}const sp3=cl((pText-.3)/.3,0,1);if(sp3>.01){const pw=R*.18,py=ty+tsz*2;X.strokeStyle=`rgba(0,170,255,${sp3*.15})`;X.lineWidth=.8;X.lineCap='round';X.beginPath();X.moveTo(cx-pw,py);X.lineTo(cx+pw,py);X.stroke();X.strokeStyle=`rgba(0,220,255,${sp3*.65})`;X.lineWidth=1;X.beginPath();X.moveTo(cx-pw,py);X.lineTo(cx-pw+pw*2*p,py);X.stroke();}X.restore();}
+    if(pLogo>.01){const sz=R*.13,sc=.3+.7*pLogo,rot=el*.0005;X.save();X.globalAlpha=sf;X.translate(cx,cy);X.scale(sc,sc);const hex=(size,off=0)=>{X.beginPath();for(let i=0;i<6;i++){const a=Math.PI/3*i-Math.PI/6+off;i===0?X.moveTo(Math.cos(a)*size,Math.sin(a)*size):X.lineTo(Math.cos(a)*size,Math.sin(a)*size);}X.closePath();};X.globalCompositeOperation='lighter';X.save();X.rotate(-rot*6%TAU);X.strokeStyle=`rgba(0,170,255,${pLogo*.12})`;X.lineWidth=.5;hex(sz*1.3);X.stroke();X.restore();X.save();X.rotate(rot*10%TAU);X.strokeStyle=`rgba(70,40,180,${pLogo*.15})`;X.lineWidth=.5;hex(sz*1.12,Math.PI/6);X.stroke();X.restore();X.globalCompositeOperation='source-over';X.strokeStyle=`rgba(0,220,255,${pLogo*.85})`;X.lineWidth=1.8;X.lineJoin='round';hex(sz);X.stroke();X.fillStyle=`rgba(0,180,255,${pLogo*.04})`;X.fill();X.save();X.rotate(rot*18%TAU);X.strokeStyle=`rgba(120,65,255,${pLogo*.6})`;X.lineWidth=1.3;hex(sz*.48);X.stroke();X.restore();X.restore();X.globalAlpha=1;}
+    if(pText>.01){X.save();X.globalAlpha=sf;const tsz=R*.052,ty=cy+R*.24;X.font=`bold ${tsz}px sans-serif`;X.textAlign='center';const title='NEXUS',tw=X.measureText(title).width,sx2=cx-tw/2,cw=tw/title.length;for(let i=0;i<title.length;i++){const cp=cl((pText-i*.06)/.25,0,1);if(cp<=0)continue;X.fillStyle=`rgba(0,225,255,${cp*.9})`;X.fillText(title[i],sx2+i*cw+cw/2,ty);}const sp2=cl((pText-.25)/.35,0,1);if(sp2>.01){X.font=`${tsz*.28}px sans-serif`;X.fillStyle=`rgba(110,65,255,${sp2*.6})`;X.fillText('初始化系统',cx,ty+tsz*1.15);}X.restore();}
   }
-
-  // Login success burst effect
-  if(loggedIn){X.globalCompositeOperation='lighter';const burstT=cl((el-loginTime)/1500,0,1);if(burstT<1){const br=R*ease(burstT)*1.5;const ba=(1-burstT)*.3;for(let i=0;i<3;i++){const rr=br*(1-i*.25);X.strokeStyle=`rgba(0,255,136,${ba*(1-i*.3)})`;X.lineWidth=2-i*.5;X.beginPath();X.arc(cx,cy,rr,0,TAU);X.stroke();}}}
 
   X.globalCompositeOperation='source-over';
   for(let i=0;i<25;i++){const gx=rand(0,W),gy=rand(0,H),gv=rI(110,146);X.fillStyle=`rgba(${gv},${gv},${gv},3)`;X.fillRect(gx,gy,1,1);}
   const vig=X.createRadialGradient(cx,cy,R*.4,cx,cy,R*1.4);vig.addColorStop(0,'rgba(0,0,0,0)');vig.addColorStop(.5,'rgba(0,0,0,0)');vig.addColorStop(.82,'rgba(0,0,0,.3)');vig.addColorStop(1,'rgba(0,0,0,.92)');X.fillStyle=vig;X.fillRect(0,0,W,H);
-  X.globalCompositeOperation='source-over';
   requestAnimationFrame(draw);
 }
-
-let loginTime=0;
-const origLogin=doLogin;
-doLogin=function(){const email=document.getElementById('inputEmail').value.trim();const pwd=document.getElementById('inputPwd').value;const btn=document.getElementById('btnLogin');const err=document.getElementById('errMsg');btn.disabled=true;btn.textContent='验证中...';err.classList.remove('show');setTimeout(()=>{if(email==='admin'&&pwd==='1'){loggedIn=true;loginTime=performance.now();document.getElementById('login').classList.add('hide');setTimeout(()=>{document.getElementById('main').classList.add('show');},600);}else{err.classList.add('show');btn.disabled=false;btn.textContent='登 录';}},800);};
 requestAnimationFrame(draw);
 </script>
 </body>

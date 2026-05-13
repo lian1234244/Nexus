@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item android:id="@+id/drawerPermission" android:icon="@android:drawable/ic_lock_lock" android:title="权限管理" />
+        <item android:id="@+id/drawerData" android:icon="@android:drawable/ic_menu_gallery" android:title="数据面板" />
+        <item android:id="@+id/drawerFiles" android:icon="@android:drawable/ic_menu_save" android:title="文件管理" />
+        <item android:id="@+id/drawerSettings" android:icon="@android:drawable/ic_menu_preferences" android:title="系统设置" />
+        <item android:id="@+id/drawerDev" android:icon="@android:drawable/ic_menu_manage" android:title="开发者选项" />
+        <item android:id="@+id/drawerAbout" android:icon="@android:drawable/ic_menu_info_details" android:title="关于Nexus" />
+    </group>
+    <item android:id="@+id/drawerLogout" android:icon="@android:drawable/ic_lock_power_off" android:title="退出登录" />
+</menu>

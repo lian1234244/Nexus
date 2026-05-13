@@ -1,12 +1,14 @@
 package com.nexus.app.ui.login
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AlphaAnimation
 import android.view.animation.AnimationSet
 import android.view.animation.ScaleAnimation
+import android.widget.CheckBox
 import android.widget.TextView
 import android.graphics.drawable.Animatable
 import android.graphics.drawable.Drawable
@@ -24,9 +26,19 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var btnLogin: MaterialButton
     private lateinit var tvError: TextView
     private lateinit var ivLogo: ImageView
+    private lateinit var cbRemember: CheckBox
+    private lateinit var prefs: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        prefs = getSharedPreferences("nexus_auth", MODE_PRIVATE)
+
+        if (prefs.getBoolean("logged_in", false)) {
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
+            return
+        }
 
         window.decorView.systemUiVisibility = (
             View.SYSTEM_UI_FLAG_LAYOUT_STABLE
@@ -40,6 +52,7 @@ class LoginActivity : AppCompatActivity() {
         btnLogin = findViewById(R.id.btnLogin)
         tvError = findViewById(R.id.tvError)
         ivLogo = findViewById(R.id.ivLogo)
+        cbRemember = findViewById(R.id.cbRemember)
 
         ivLogo.post {
             val d: Drawable? = ivLogo.drawable
@@ -47,7 +60,6 @@ class LoginActivity : AppCompatActivity() {
         }
 
         btnLogin.setOnClickListener { doLogin() }
-
         animateEntrance()
     }
 
@@ -60,30 +72,26 @@ class LoginActivity : AppCompatActivity() {
             findViewById<View>(R.id.tilPwd),
             btnLogin
         )
-
         items.forEachIndexed { index, view ->
             view.alpha = 0f
             view.translationY = 20f
-            view.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setDuration(350)
+            view.animate().alpha(1f).translationY(0f).setDuration(350)
                 .setStartDelay(80L + index * 70L)
-                .setInterpolator(AccelerateDecelerateInterpolator())
-                .start()
+                .setInterpolator(AccelerateDecelerateInterpolator()).start()
         }
     }
 
     private fun doLogin() {
         val email = etEmail.text?.toString()?.trim() ?: ""
         val pwd = etPwd.text?.toString() ?: ""
-
         btnLogin.isEnabled = false
         btnLogin.text = "验证中..."
         tvError.animate().alpha(0f).setDuration(200).start()
-
         etEmail.postDelayed({
             if (email == "admin" && pwd == "1") {
+                if (cbRemember.isChecked) {
+                    prefs.edit().putBoolean("logged_in", true).apply()
+                }
                 onLoginSuccess()
             } else {
                 onLoginFail()
@@ -93,20 +101,12 @@ class LoginActivity : AppCompatActivity() {
 
     private fun onLoginSuccess() {
         val rootView = findViewById<View>(android.R.id.content)
-
-        val scale = ScaleAnimation(1f, 1.05f, 1f, 1.05f,
-            ScaleAnimation.RELATIVE_TO_SELF, 0.5f,
-            ScaleAnimation.RELATIVE_TO_SELF, 0.5f)
+        val scale = ScaleAnimation(1f, 1.05f, 1f, 1.05f, ScaleAnimation.RELATIVE_TO_SELF, 0.5f, ScaleAnimation.RELATIVE_TO_SELF, 0.5f)
         val fade = AlphaAnimation(1f, 0f)
         val set = AnimationSet(true)
-        set.addAnimation(scale)
-        set.addAnimation(fade)
-        set.duration = 500
-        set.interpolator = AccelerateDecelerateInterpolator()
-        set.fillAfter = true
-
+        set.addAnimation(scale); set.addAnimation(fade)
+        set.duration = 500; set.interpolator = AccelerateDecelerateInterpolator(); set.fillAfter = true
         rootView.startAnimation(set)
-
         set.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
             override fun onAnimationStart(animation: android.view.animation.Animation?) {}
             override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
@@ -123,21 +123,14 @@ class LoginActivity : AppCompatActivity() {
         btnLogin.isEnabled = true
         btnLogin.text = "登 录"
         tvError.animate().alpha(1f).setDuration(300).start()
-
         val rootView = findViewById<View>(android.R.id.content)
         rootView.animate().translationX(10f).setDuration(50).withEndAction {
             rootView.animate().translationX(-10f).setDuration(50).withEndAction {
-                rootView.animate().translationX(6f).setDuration(50).withEndAction {
-                    rootView.animate().translationX(-6f).setDuration(50).withEndAction {
-                        rootView.animate().translationX(0f).setDuration(50).start()
-                    }
-                }
+                rootView.animate().translationX(0f).setDuration(50).start()
             }
         }
     }
 
     @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        // no-op
-    }
+    override fun onBackPressed() {}
 }

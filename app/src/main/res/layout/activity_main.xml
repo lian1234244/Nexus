@@ -1,240 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<androidx.drawerlayout.widget.DrawerLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F0F2F5">
+    android:fitsSystemWindows="true">
 
-    <TextView
-        android:id="@+id/tvWelcome"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="WELCOME_BACK_"
-        android:textColor="#9E9E9E"
-        android:textSize="14sp"
-        android:fontFamily="sans-serif-medium"
-        android:letterSpacing="0.25"
-        android:layout_marginBottom="8dp"
-        app:layout_constraintVertical_chainStyle="packed"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/tvMainTitle"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/tvMainTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="NEXUS"
-        android:textColor="#1A1A2E"
-        android:textSize="32sp"
-        android:fontFamily="sans-serif-medium"
-        android:letterSpacing="0.35"
-        android:layout_marginBottom="20dp"
-        app:layout_constraintTop_toBottomOf="@id/tvWelcome"
-        app:layout_constraintBottom_toTopOf="@id/tvSub"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="#FFFFFF"
+            app:titleTextColor="#1A1A2E"
+            app:subtitleTextColor="#999999"
+            app:navigationIconTint="#1A1A2E"
+            app:title="消息" />
 
-    <TextView
-        android:id="@+id/tvSub"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="控制台已就绪 · 系统正常"
-        android:textColor="#9E9E9E"
-        android:textSize="11sp"
-        android:fontFamily="sans-serif"
-        android:letterSpacing="0.12"
-        android:layout_marginBottom="40dp"
-        app:layout_constraintTop_toBottomOf="@id/tvMainTitle"
-        app:layout_constraintBottom_toTopOf="@id/gridCards"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        <FrameLayout
+            android:id="@+id/navHostFragment"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#F0F2F5" />
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/gridCards"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="32dp"
-        android:layout_marginEnd="32dp"
-        app:layout_constraintWidth_max="340dp"
-        app:layout_constraintTop_toBottomOf="@id/tvSub"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintVertical_bias="0">
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottomNav"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="#FFFFFF"
+            app:itemIconTint="@color/bottom_nav_color"
+            app:itemTextColor="@color/bottom_nav_color"
+            app:labelVisibilityMode="labeled"
+            app:menu="@menu/bottom_nav_menu" />
 
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardData"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="6dp"
-            android:layout_marginBottom="12dp"
-            app:cardBackgroundColor="#FFFFFF"
-            app:strokeColor="#E0E0E0"
-            app:strokeWidth="1dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="1dp"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/cardTask"
-            app:layout_constraintBottom_toTopOf="@id/cardMonitor"
-            app:layout_constraintWidth_percent="0.48">
+    </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:padding="20dp">
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/navView"
+        android:layout_width="280dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:fitsSystemWindows="true"
+        app:headerLayout="@layout/nav_header"
+        app:menu="@menu/drawer_menu" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="◈"
-                    android:textColor="#1A1A2E"
-                    android:textSize="22sp"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="数据面板"
-                    android:textColor="#666666"
-                    android:textSize="10sp"
-                    android:fontFamily="sans-serif"
-                    android:letterSpacing="0.15" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardTask"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
-            android:layout_marginBottom="12dp"
-            app:cardBackgroundColor="#FFFFFF"
-            app:strokeColor="#E0E0E0"
-            app:strokeWidth="1dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="1dp"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toEndOf="@id/cardData"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toTopOf="@id/cardConfig"
-            app:layout_constraintWidth_percent="0.48">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="▸"
-                    android:textColor="#1A1A2E"
-                    android:textSize="22sp"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="任务中心"
-                    android:textColor="#666666"
-                    android:textSize="10sp"
-                    android:fontFamily="sans-serif"
-                    android:letterSpacing="0.15" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardMonitor"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="6dp"
-            app:cardBackgroundColor="#FFFFFF"
-            app:strokeColor="#E0E0E0"
-            app:strokeWidth="1dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="1dp"
-            app:layout_constraintTop_toBottomOf="@id/cardData"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/cardConfig"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintWidth_percent="0.48">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="◉"
-                    android:textColor="#1A1A2E"
-                    android:textSize="22sp"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="系统监控"
-                    android:textColor="#666666"
-                    android:textSize="10sp"
-                    android:fontFamily="sans-serif"
-                    android:letterSpacing="0.15" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardConfig"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
-            app:cardBackgroundColor="#FFFFFF"
-            app:strokeColor="#E0E0E0"
-            app:strokeWidth="1dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="1dp"
-            app:layout_constraintTop_toBottomOf="@id/cardTask"
-            app:layout_constraintStart_toEndOf="@id/cardMonitor"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintWidth_percent="0.48">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="△"
-                    android:textColor="#1A1A2E"
-                    android:textSize="22sp"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="配置管理"
-                    android:textColor="#666666"
-                    android:textSize="10sp"
-                    android:fontFamily="sans-serif"
-                    android:letterSpacing="0.15" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.drawerlayout.widget.DrawerLayout>
