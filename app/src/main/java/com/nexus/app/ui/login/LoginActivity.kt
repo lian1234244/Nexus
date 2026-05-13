@@ -125,17 +125,11 @@ class LoginActivity : AppCompatActivity() {
         tvError.animate().alpha(1f).setDuration(300).start()
 
         val rootView = findViewById<View>(android.R.id.content)
-        rootView.animate()
-            .translationX(10f).setDuration(50).withEndAction {
-            rootView.animate()
-                .translationX(-10f).setDuration(50).withEndAction {
-                rootView.animate()
-                    .translationX(6f).setDuration(50).withEndAction {
-                    rootView.animate()
-                        .translationX(-6f).setDuration(50).withEndAction {
-                        rootView.animate()
-                            .translationX(0f).setDuration(50).start()
-                        }
+        rootView.animate().translationX(10f).setDuration(50).withEndAction {
+            rootView.animate().translationX(-10f).setDuration(50).withEndAction {
+                rootView.animate().translationX(6f).setDuration(50).withEndAction {
+                    rootView.animate().translationX(-6f).setDuration(50).withEndAction {
+                        rootView.animate().translationX(0f).setDuration(50).start()
                     }
                 }
             }
@@ -143,5 +137,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {}
+    override fun onBackPressed() {
+        // no-op
+    }
 }
