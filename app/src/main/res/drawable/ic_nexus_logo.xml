@@ -24,32 +24,38 @@
             android:strokeColor="#00FF88"
             android:strokeWidth="0.4"
             android:strokeAlpha="0.25"
-            android:pathData="M0,-42 L0,-22" />
+            android:pathData="M0,-42 L0,-22"
+            android:fillColor="#00000000" />
         <path
             android:strokeColor="#00FF88"
             android:strokeWidth="0.4"
             android:strokeAlpha="0.25"
-            android:pathData="M36.4,-21 L19,-11" />
+            android:pathData="M36.4,-21 L19,-11"
+            android:fillColor="#00000000" />
         <path
             android:strokeColor="#00FF88"
             android:strokeWidth="0.4"
             android:strokeAlpha="0.25"
-            android:pathData="M36.4,21 L19,11" />
+            android:pathData="M36.4,21 L19,11"
+            android:fillColor="#00000000" />
         <path
             android:strokeColor="#00FF88"
             android:strokeWidth="0.4"
             android:strokeAlpha="0.25"
-            android:pathData="M0,42 L0,22" />
+            android:pathData="M0,42 L0,22"
+            android:fillColor="#00000000" />
         <path
             android:strokeColor="#00FF88"
             android:strokeWidth="0.4"
             android:strokeAlpha="0.25"
-            android:pathData="M-36.4,21 L-19,11" />
+            android:pathData="M-36.4,21 L-19,11"
+            android:fillColor="#00000000" />
         <path
             android:strokeColor="#00FF88"
             android:strokeWidth="0.4"
             android:strokeAlpha="0.25"
-            android:pathData="M-36.4,-21 L-19,-11" />
+            android:pathData="M-36.4,-21 L-19,-11"
+            android:fillColor="#00000000" />
 
         <path
             android:pathData="M0,-52 A52,52 0 1,1 0,-52.01 Z"
@@ -57,7 +63,7 @@
             android:strokeWidth="0.5"
             android:fillColor="#00000000"
             android:strokeAlpha="0.12"
-            android:strokeDasharray="5 15" />
+            android:strokeDashArray="5 15" />
 
         <path
             android:pathData="M0,-62 A62,62 0 1,1 0,-62.01 Z"
@@ -65,7 +71,7 @@
             android:strokeWidth="0.6"
             android:fillColor="#00000000"
             android:strokeAlpha="0.15"
-            android:strokeDasharray="8 12" />
+            android:strokeDashArray="8 12" />
 
         <group android:scaleX="0.04" android:scaleY="0.04">
             <path

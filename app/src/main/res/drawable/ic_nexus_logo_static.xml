@@ -49,17 +49,42 @@
                 android:strokeAlpha="0.4" />
         </group>
 
-        <group
+        <path
+            android:pathData="M0,-42 L0,-22"
             android:strokeColor="#00FF88"
             android:strokeWidth="0.4"
-            android:strokeAlpha="0.25">
-            <path android:pathData="M0,-42 L0,-22" />
-            <path android:pathData="M36.4,-21 L19,-11" />
-            <path android:pathData="M36.4,21 L19,11" />
-            <path android:pathData="M0,42 L0,22" />
-            <path android:pathData="M-36.4,21 L-19,11" />
-            <path android:pathData="M-36.4,-21 L-19,-11" />
-        </group>
+            android:strokeAlpha="0.25"
+            android:fillColor="#00000000" />
+        <path
+            android:pathData="M36.4,-21 L19,-11"
+            android:strokeColor="#00FF88"
+            android:strokeWidth="0.4"
+            android:strokeAlpha="0.25"
+            android:fillColor="#00000000" />
+        <path
+            android:pathData="M36.4,21 L19,11"
+            android:strokeColor="#00FF88"
+            android:strokeWidth="0.4"
+            android:strokeAlpha="0.25"
+            android:fillColor="#00000000" />
+        <path
+            android:pathData="M0,42 L0,22"
+            android:strokeColor="#00FF88"
+            android:strokeWidth="0.4"
+            android:strokeAlpha="0.25"
+            android:fillColor="#00000000" />
+        <path
+            android:pathData="M-36.4,21 L-19,11"
+            android:strokeColor="#00FF88"
+            android:strokeWidth="0.4"
+            android:strokeAlpha="0.25"
+            android:fillColor="#00000000" />
+        <path
+            android:pathData="M-36.4,-21 L-19,-11"
+            android:strokeColor="#00FF88"
+            android:strokeWidth="0.4"
+            android:strokeAlpha="0.25"
+            android:fillColor="#00000000" />
 
         <group android:name="corePulse">
             <path
