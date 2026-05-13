@@ -63,7 +63,7 @@ class CgSplashView @JvmOverloads constructor(
     private fun soft(c: Canvas, x: Float, y: Float, r: Float, color: Int, add: Boolean) {
         if (r <= 0 || Color.alpha(color) <= 1) return
         val p = if (add) addP else nP
-        p.shader = RadialGradient(x, y, r, color.toLong(), Color.argb(0, Color.red(color), Color.green(color), Color.blue(color)).toLong(), Shader.TileMode.CLAMP)
+        p.shader = RadialGradient(x, y, r, longArrayOf(color.toLong(), Color.argb(0, Color.red(color), Color.green(color), Color.blue(color)).toLong()), floatArrayOf(0f, 1f), Shader.TileMode.CLAMP)
         c.drawCircle(x, y, r, p); p.shader = null
     }
 
@@ -178,7 +178,7 @@ class CgSplashView @JvmOverloads constructor(
         if (glowP < .01f) return; c.saveLayer(null, null)
         val cR = R * .04f * glowP * (1 + sin(time * .003f).toFloat() * .1f)
         arrayOf(floatArrayOf(cR * 14, .02f), floatArrayOf(cR * 7, .05f), floatArrayOf(cR * 3.5f, .13f), floatArrayOf(cR * 1.8f, .28f), floatArrayOf(cR, .45f)).forEach { soft(c, cx, cy, it[0], Color.argb((glowP * it[1] * 255).toInt().coerceIn(0, 255), 0, 185, 255), true) }
-        nP.shader = RadialGradient(cx, cy, 0f, cx, cy, cR, Color.argb((glowP * 230).toInt().coerceIn(0, 255), 230, 248, 255).toLong(), Color.argb((glowP * 128).toInt().coerceIn(0, 255), 0, 215, 255).toLong(), Shader.TileMode.CLAMP)
+        nP.shader = RadialGradient(cx, cy, 0f, cx, cy, cR, longArrayOf(Color.argb((glowP * 230).toInt().coerceIn(0, 255), 230, 248, 255).toLong(), Color.argb((glowP * 128).toInt().coerceIn(0, 255), 0, 215, 255).toLong()), floatArrayOf(0f, 1f), Shader.TileMode.CLAMP)
         c.drawCircle(cx, cy, cR, nP); nP.shader = null; c.restore()
     }
 
@@ -203,7 +203,7 @@ class CgSplashView @JvmOverloads constructor(
         c.save(); c.rotate(rot * 18f % TAU); sP.color = Color.argb((logoAlpha * 153).toInt().coerceIn(0, 255), 120, 65, 255); sP.strokeWidth = 1.3f; drawHex(sz * .48f, 0f); c.restore()
         c.saveLayer(null, null)
         val cR2 = sz * .1f; arrayOf(floatArrayOf(cR2 * 5, .08f), floatArrayOf(cR2 * 2.5f, .25f), floatArrayOf(cR2 * 1.2f, .6f)).forEach { soft(c, 0f, 0f, it[0], Color.argb((logoAlpha * it[1] * 255).toInt().coerceIn(0, 255), 0, 200, 255), true) }
-        nP.shader = RadialGradient(0f, 0f, 0f, 0f, 0f, cR2, Color.argb((logoAlpha * 230).toInt().coerceIn(0, 255), 210, 245, 255).toLong(), Color.argb(0, 0, 180, 255).toLong(), Shader.TileMode.CLAMP); c.drawCircle(0f, 0f, cR2, nP); nP.shader = null
+        nP.shader = RadialGradient(0f, 0f, 0f, 0f, 0f, cR2, longArrayOf(Color.argb((logoAlpha * 230).toInt().coerceIn(0, 255), 210, 245, 255).toLong(), Color.argb(0, 0, 180, 255).toLong()), floatArrayOf(0f, 1f), Shader.TileMode.CLAMP); c.drawCircle(0f, 0f, cR2, nP); nP.shader = null
         c.restore(); c.restore()
     }
 
