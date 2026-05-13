@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.*
 import android.os.Build
 import android.util.AttributeSet
+import android.view.PixelFormat
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import kotlin.math.*
@@ -45,7 +46,7 @@ class CgSplashView @JvmOverloads constructor(
     private fun lrI(a: Int, b: Int, t: Float) = (a + (b - a) * t).toInt()
     private fun ease(t: Float): Float { val c = cl(t, 0f, 1f); return if (c < .5f) 4 * c * c * c else 1 - (-2 * c + 2).pow(3) / 2f }
 
-    init { holder.addCallback(this) }
+    init { holder.addCallback(this); setZOrderOnTop(true); holder.setFormat(PixelFormat.TRANSLUCENT) }
 
     private fun radialGrad(cx: Float, cy: Float, r: Float, colors: IntArray, stops: FloatArray, tile: Shader.TileMode): RadialGradient {
         return if (Build.VERSION.SDK_INT >= 34) {
@@ -93,9 +94,10 @@ class CgSplashView @JvmOverloads constructor(
     private inner class RenderThread : Thread() {
         override fun run() {
             while (running) {
+                if (width <= 0 || height <= 0) { try { sleep(16) } catch (_: InterruptedException) { break }; continue }
                 val canvas = holder.lockCanvas() ?: continue
                 try { time = System.currentTimeMillis() - startTime; phase = cl(time / 6200f, 0f, 1f); update(); render(canvas) }
-                catch (_: Exception) {}
+                catch (e: Exception) { e.printStackTrace() }
                 finally { try { holder.unlockCanvasAndPost(canvas) } catch (_: Exception) {} }
                 try { sleep(16) } catch (_: InterruptedException) { break }
             }
