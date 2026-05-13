@@ -7,7 +7,7 @@ import android.os.Looper
 import android.view.View
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
-import com.nexus.app.ui.main.MainActivity
+import com.nexus.app.ui.login.LoginActivity
 
 class SplashActivity : AppCompatActivity() {
 
@@ -53,7 +53,7 @@ class SplashActivity : AppCompatActivity() {
     }
 
     private fun navigateToMain() {
-        startActivity(Intent(this, MainActivity::class.java))
+        startActivity(Intent(this, LoginActivity::class.java))
         @Suppress("DEPRECATION")
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         finish()

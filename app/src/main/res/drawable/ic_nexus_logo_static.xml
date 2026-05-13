@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <group android:translateX="100" android:translateY="100">
+
+        <group android:name="outerRing">
+            <path
+                android:pathData="M0,-62 A62,62 0 1,1 0,-62.01 Z"
+                android:strokeColor="#00FF88"
+                android:strokeWidth="0.6"
+                android:fillColor="#00000000"
+                android:strokeAlpha="0.15"
+                android:strokeDashArray="8 12"
+                android:trimPathStart="0"
+                android:trimPathEnd="1" />
+        </group>
+
+        <group android:name="innerRing">
+            <path
+                android:pathData="M0,-52 A52,52 0 1,1 0,-52.01 Z"
+                android:strokeColor="#00D4FF"
+                android:strokeWidth="0.5"
+                android:fillColor="#00000000"
+                android:strokeAlpha="0.12"
+                android:strokeDashArray="5 15"
+                android:trimPathStart="0"
+                android:trimPathEnd="1" />
+        </group>
+
+        <group android:name="outerHex">
+            <path
+                android:pathData="M0,-42 L36.4,-21 L36.4,21 L0,42 L-36.4,21 L-36.4,-21 Z"
+                android:strokeColor="#00FF88"
+                android:strokeWidth="1.2"
+                android:fillColor="#00000000"
+                android:strokeAlpha="0.5" />
+        </group>
+
+        <group android:name="innerHex">
+            <path
+                android:pathData="M0,-22 L19,-11 L19,11 L0,22 L-19,11 L-19,-11 Z"
+                android:strokeColor="#FF00FF"
+                android:strokeWidth="1"
+                android:fillColor="#00000000"
+                android:strokeAlpha="0.4" />
+        </group>
+
+        <group
+            android:strokeColor="#00FF88"
+            android:strokeWidth="0.4"
+            android:strokeAlpha="0.25">
+            <path android:pathData="M0,-42 L0,-22" />
+            <path android:pathData="M36.4,-21 L19,-11" />
+            <path android:pathData="M36.4,21 L19,11" />
+            <path android:pathData="M0,42 L0,22" />
+            <path android:pathData="M-36.4,21 L-19,11" />
+            <path android:pathData="M-36.4,-21 L-19,-11" />
+        </group>
+
+        <group android:name="corePulse">
+            <path
+                android:pathData="M0,-5 A5,5 0 1,1 0,-5.01 Z"
+                android:fillColor="#00FF88"
+                android:fillAlpha="0.9" />
+        </group>
+
+        <path
+            android:pathData="M0,-3 A3,3 0 1,1 0,-3.01 Z"
+            android:fillColor="#FFFFFF"
+            android:fillAlpha="0.95" />
+
+    </group>
+</vector>

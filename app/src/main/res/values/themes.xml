@@ -8,6 +8,11 @@
         <item name="android:navigationBarColor">@color/nexus_deep_space</item>
     </style>
 
+    <style name="Theme.NexusApp.Login" parent="Theme.NexusApp">
+        <item name="android:windowBackground">@color/nexus_deep_space</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+
     <style name="Theme.NexusApp.Splash" parent="Theme.NexusApp">
         <item name="android:windowBackground">@color/nexus_black</item>
         <item name="android:windowNoTitle">true</item>

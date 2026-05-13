@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_nexus_logo_static">
+
+    <target
+        android:name="outerRing"
+        android:animation="@anim/avd_rotate_cw" />
+
+    <target
+        android:name="innerRing"
+        android:animation="@anim/avd_rotate_ccw" />
+
+    <target
+        android:name="outerHex"
+        android:animation="@anim/avd_rotate_ccw_slow" />
+
+    <target
+        android:name="innerHex"
+        android:animation="@anim/avd_rotate_cw_slow" />
+
+    <target
+        android:name="corePulse"
+        android:animation="@anim/avd_pulse" />
+
+</animated-vector>

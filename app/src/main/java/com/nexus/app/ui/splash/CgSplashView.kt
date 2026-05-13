@@ -95,7 +95,7 @@ class CgSplashView @JvmOverloads constructor(
 
     private fun render(c: Canvas) {
         c.drawColor(Color.BLACK)
-        drawBg(c); drawNebula(c); drawStars(c); drawDust(c); drawOrbs(c); drawRibbons(c); drawWeb(c); drawCore(c); drawSparks(c); drawLogo(c); drawFlare(c); drawText(c); drawGrain(c); drawVignette(c)
+        drawBg(c); drawNebula(c); drawStars(c); drawDust(c); drawOrbs(c); drawRibbons(c); drawWeb(c); drawCore(c); drawSparks(c); drawLogo(c); drawText(c); drawGrain(c); drawVignette(c)
     }
 
     private fun drawBg(c: Canvas) {
@@ -207,13 +207,6 @@ class CgSplashView @JvmOverloads constructor(
         c.restore(); c.restore()
     }
 
-    private fun drawFlare(c: Canvas) {
-        if (logoAlpha < .4f) return; c.saveLayer(null, null)
-        val fi = (logoAlpha - .4f) / .6f; val fl = R * .5f * fi
-        for (i in -2..2) { sP.color = Color.argb((fi * .05f * (1 - abs(i) / 3f) * 255).toInt().coerceIn(0, 255), 0, 190, 255); sP.strokeWidth = 1f - abs(i) * .25f; c.drawLine(cx - fl, cy + i * 3f, cx + fl, cy + i * 3f, sP) }
-        c.restore()
-    }
-
     private fun drawText(c: Canvas) {
         if (textAlpha < .01f) return
         val tsz = R * .052f; val ty = cy + R * .24f
@@ -221,7 +214,7 @@ class CgSplashView @JvmOverloads constructor(
         val title = "NEXUS"; val tw = tP.measureText(title); val sx = cx - tw / 2f; val cw = tw / title.length
         for (i in title.indices) { val cp = cl((textAlpha - i * .06f) / .25f, 0f, 1f); if (cp <= 0) continue; tP.color = Color.argb((cp * 230).toInt().coerceIn(0, 255), 0, 225, 255); c.drawText(title[i].toString(), sx + i * cw + cw / 2f, ty, tP) }
         val sp2 = cl((textAlpha - .25f) / .35f, 0f, 1f)
-        if (sp2 > .01f) { nP.textSize = tsz * .28f; nP.textAlign = Paint.Align.CENTER; nP.color = Color.argb((sp2 * 153).toInt().coerceIn(0, 255), 110, 65, 255); nP.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL); c.drawText("INITIALIZING NEXUS", cx, ty + tsz * 1.15f, nP); nP.typeface = null }
+        if (sp2 > .01f) { nP.textSize = tsz * .28f; nP.textAlign = Paint.Align.CENTER; nP.color = Color.argb((sp2 * 153).toInt().coerceIn(0, 255), 110, 65, 255); nP.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL); c.drawText("初始化系统", cx, ty + tsz * 1.15f, nP); nP.typeface = null }
         val sp3 = cl((textAlpha - .3f) / .3f, 0f, 1f)
         if (sp3 > .01f) { val pw = R * .18f; val py = ty + tsz * 2f; sP.color = Color.argb((sp3 * 38).toInt().coerceIn(0, 255), 0, 170, 255); sP.strokeWidth = .8f; sP.strokeCap = Paint.Cap.ROUND; c.drawLine(cx - pw, py, cx + pw, py, sP); sP.color = Color.argb((sp3 * 166).toInt().coerceIn(0, 255), 0, 220, 255); sP.strokeWidth = 1f; c.drawLine(cx - pw, py, cx - pw + pw * 2 * phase, py, sP); soft(c, cx - pw + pw * 2 * phase, py, 4f, Color.argb((sp3 * 128).toInt().coerceIn(0, 255), 0, 230, 255), true) }
     }
