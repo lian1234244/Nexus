@@ -176,60 +176,79 @@ E:\NexusApp\
   ```
 - **注意**：所有 `RadialGradient`/`LinearGradient`/`SweepGradient` 的颜色参数在 API 34+ 从 `Int`/`IntArray` 变为 `Long`/`LongArray`。**任何直接使用新签名的地方都必须加 API 守卫，否则低版本闪退！**
 
-### 2. PowerShell 不支持 `&&` 语句分隔符
+### 2. ⚠️⚠️ `SurfaceView.RenderThread` 重复 `start()` 抛 `IllegalThreadStateException` 闪退
+- **错误**：`private val thread = RenderThread()` 在字段初始化时创建线程，`surfaceCreated` 中 `if (!thread.isAlive) thread.start()` — Surface 被重建时，旧线程已结束，对同一个 Thread 对象再次调用 `start()` 抛 `IllegalThreadStateException`
+- **后果**：部分设备 SurfaceView 的 surface 在初始化时会被创建/销毁/重建多次，导致 APP 闪退
+- **正确**：每次 `surfaceCreated` 都创建新的 RenderThread；`surfaceDestroyed` 中 join 等待线程结束：
+  ```kotlin
+  private var thread: RenderThread? = null
+  override fun surfaceCreated(h: SurfaceHolder) {
+      running = true; val t = RenderThread(); thread = t; t.start()
+  }
+  override fun surfaceDestroyed(h: SurfaceHolder) {
+      running = false; thread?.interrupt(); thread?.join(100)
+  }
+  ```
+
+### 3. ⚠️⚠️ AnimatedVectorDrawable 的 `<objectAnimator>` 必须放在 `res/animator/` 而非 `res/anim/`
+- **错误**：将 `ObjectAnimator` XML 放在 `res/anim/` 下，`ic_nexus_logo_animated.xml` 引用 `@anim/avd_rotate_cw`
+- **后果**：`res/anim/` 是 **View Animation**（`Animation` 类）的资源目录，`res/animator/` 才是 **Property Animation**（`ObjectAnimator`/`AnimatorSet`）的资源目录。放错目录可能导致运行时 `Resources$NotFoundException` 或动画不生效
+- **正确**：所有 AVD 用的 `<objectAnimator>` XML 放 `res/animator/`，引用用 `@animator/xxx`
+
+### 4. PowerShell 不支持 `&&` 语句分隔符
 - **错误**：`cd E:/NexusApp && git status` → 解析错误
 - **正确**：PowerShell中使用 `;` 连接命令：`cd E:/NexusApp; git status`
 - **注意**：Git Bash环境可用 `&&`，PowerShell不可
 
-### 2. PowerShell 中 `git commit -m` 含中文/空格会解析失败
+### 5. PowerShell 中 `git commit -m` 含中文/空格会解析失败
 - **错误**：`git commit -m "feat: 添加登录界面"` → 中文字符被PowerShell误解析
 - **正确**：使用简短英文commit message：`git commit -m "feat-add-login-ui"`
 - **替代**：Git Bash中HEREDOC语法 `$(cat <<'EOF'...EOF)` 在PowerShell也不可用
 
-### 3. SurfaceView 中 `density` 属性不存在
+### 6. SurfaceView 中 `density` 属性不存在
 - **错误**：`context.density` 编译失败
 - **正确**：`context.resources.displayMetrics.density`
 
-### 4. Kotlin 中 `sin(Long * Float)` 类型陷阱
+### 7. Kotlin 中 `sin(Long * Float)` 类型陷阱
 - **错误**：`sin(time * 0.003)` 其中 `time` 是 `Long`，`0.003` 是 `Double`，结果为 `Double`，但 `sin()` 在不同上下文返回不同类型
 - **正确**：显式 `.toFloat()`：`sin(time * 0.003f).toFloat()`
 
-### 5. Gradle Wrapper Jar 缺失导致 CI 失败
+### 8. Gradle Wrapper Jar 缺失导致 CI 失败
 - **错误**：直接运行 `./gradlew` 报 `ClassNotFoundException: GradleWrapperMain`
 - **正确**：CI中使用 `gradle/actions/setup-gradle@v4` + `gradle-version: '8.5'` 直接调用 gradle，不依赖 wrapper jar
 - **注意**：本地开发需先执行 `gradle wrapper` 生成 jar
 
-### 6. AndroidManifest 引用的 `mipmap/ic_launcher` 必须提供资源文件
+### 9. AndroidManifest 引用的 `mipmap/ic_launcher` 必须提供资源文件
 - **错误**：清单引用了 `@mipmap/ic_launcher` 但无对应资源 → `processDebugResources` 失败
 - **正确**：在 `res/mipmap-*/` 下提供 `ic_launcher.xml`（adaptive icon）
 
-### 7. VectorDrawable 不支持 `android:strokeDashArray` 属性
+### 10. VectorDrawable 不支持 `android:strokeDashArray` 属性
 - **错误**：在 `<path>` 上使用 `android:strokeDashArray="8 12"` → AAPT报错 `attribute android:strokeDashArray not found`
 - **正确**：VectorDrawable 的 `<path>` **不支持** `strokeDashArray`，只能用实线。虚线效果需用Canvas代码绘制或拆分为多段短path
 - **注意**：SVG/HTML的 `stroke-dasharray` 在Android VectorDrawable中没有等价属性
 
-### 8. VectorDrawable 的 `<path>` 必须有 `android:fillColor`
+### 11. VectorDrawable 的 `<path>` 必须有 `android:fillColor`
 - **错误**：仅描边的path省略 `fillColor` → AAPT报错
 - **正确**：所有 `<path>` 必须显式声明 `android:fillColor="#00000000"`（透明填充）表示不填充
 
-### 9. `<group>` 标签不能设置 `strokeColor`/`strokeWidth` 等path属性
+### 12. `<group>` 标签不能设置 `strokeColor`/`strokeWidth` 等path属性
 - **错误**：`<group android:strokeColor="#00FF88">` → AAPT报错
 - **正确**：`<group>` 只支持 `name`、`translateX/Y`、`scaleX/Y`、`rotation`、`pivotX/Y`。描边/填充属性必须设在 `<path>` 上
 
-### 10. AnimatedVectorDrawable 的 `<target>` 不支持 `<set>` 动画集
+### 13. AnimatedVectorDrawable 的 `<target>` 不支持 `<set>` 动画集
 - **错误**：`<set>` 内含多个 `<objectAnimator>` 用于同一 target → 运行时崩溃或无效
 - **正确**：每个 `<target>` 只能引用一个 `<objectAnimator>`。如需同时动画scaleX和scaleY，需拆分为两个 `<target>` 指向不同动画文件
 
-### 12. API 34+ 的 `RadialGradient` 颜色参数类型变更（编译时类型不匹配）
+### 14. API 34+ 的 `RadialGradient` 颜色参数类型变更（编译时类型不匹配）
 - **错误**：`RadialGradient(x, y, r, intColor1, intColor2, tileMode)` → 编译时类型不匹配，API 34+ 期望 `Long`/`LongArray`
 - **正确**：不要直接用新签名（会导致低版本闪退，见第1条），统一用兼容包装方法 `radialGrad()`/`radialGrad2()`，内部根据 `Build.VERSION.SDK_INT` 分发
 - **关键**：不要用两色构造函数传 `.toLong()`，Kotlin会将其匹配到多色构造函数（签名歧义），导致"Long但期望LongArray"编译错误
 
-### 13. Kotlin `surfaceChanged` 参数名不能与父方法重复
+### 15. Kotlin `surfaceChanged` 参数名不能与父方法重复
 - **错误**：`override fun surfaceChanged(h: SurfaceHolder, f: Int, w: Int, h: Int)` → 参数 `h` 冲突
 - **正确**：`override fun surfaceChanged(holder: SurfaceHolder, f: Int, w: Int, h: Int)`
 
-### 14. Kotlin 链式 `withEndAction` 的花括号缩进可能导致解析错误
+### 16. Kotlin 链式 `withEndAction` 的花括号缩进可能导致解析错误
 - **错误**：
   ```kotlin
   view.animate()
@@ -247,7 +266,7 @@ E:\NexusApp\
   }
   ```
 
-### 15. `onBackPressed()` 空实现不能用 `{}` 且不能递归调用自身
+### 17. `onBackPressed()` 空实现不能用 `{}` 且不能递归调用自身
 - **错误**：`override fun onBackPressed() { onBackPressed() }` → 无限递归StackOverflow
 - **正确**：`override fun onBackPressed() { /* no-op */ }`
 
