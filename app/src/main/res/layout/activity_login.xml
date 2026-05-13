@@ -58,7 +58,6 @@
         android:layout_marginStart="32dp"
         android:layout_marginEnd="32dp"
         android:layout_marginBottom="14dp"
-        android:backgroundTint="#1E00FF88"
         app:boxBackgroundColor="#1414181A"
         app:boxStrokeColor="#00FF88"
         app:boxStrokeWidthFocused="1dp"

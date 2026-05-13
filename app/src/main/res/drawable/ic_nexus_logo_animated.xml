@@ -4,22 +4,22 @@
 
     <target
         android:name="outerRing"
-        android:animation="@anim/avd_rotate_cw" />
+        android:animation="@animator/avd_rotate_cw" />
 
     <target
         android:name="innerRing"
-        android:animation="@anim/avd_rotate_ccw" />
+        android:animation="@animator/avd_rotate_ccw" />
 
     <target
         android:name="outerHex"
-        android:animation="@anim/avd_rotate_ccw_slow" />
+        android:animation="@animator/avd_rotate_ccw_slow" />
 
     <target
         android:name="innerHex"
-        android:animation="@anim/avd_rotate_cw_slow" />
+        android:animation="@animator/avd_rotate_cw_slow" />
 
     <target
         android:name="corePulse"
-        android:animation="@anim/avd_pulse" />
+        android:animation="@animator/avd_pulse" />
 
 </animated-vector>

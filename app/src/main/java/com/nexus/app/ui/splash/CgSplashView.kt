@@ -13,7 +13,7 @@ class CgSplashView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : SurfaceView(context, attrs, defStyleAttr), SurfaceHolder.Callback {
 
-    private val thread = RenderThread()
+    private var thread: RenderThread? = null
     @Volatile private var running = false
     private var phase = 0f; private var time = 0L; private var startTime = 0L
     private val cx get() = width / 2f; private val cy get() = height / 2f
@@ -86,16 +86,17 @@ class CgSplashView @JvmOverloads constructor(
         c.drawCircle(x, y, r, p); p.shader = null
     }
 
-    override fun surfaceCreated(h: SurfaceHolder) { startTime = System.currentTimeMillis(); running = true; if (!thread.isAlive) thread.start() }
+    override fun surfaceCreated(h: SurfaceHolder) { startTime = System.currentTimeMillis(); running = true; val t = RenderThread(); thread = t; t.start() }
     override fun surfaceChanged(holder: SurfaceHolder, f: Int, w: Int, h: Int) { rebuildWeb() }
-    override fun surfaceDestroyed(h: SurfaceHolder) { running = false; thread.interrupt() }
+    override fun surfaceDestroyed(h: SurfaceHolder) { running = false; thread?.interrupt(); try { thread?.join(100) } catch (_: InterruptedException) {} }
 
     private inner class RenderThread : Thread() {
         override fun run() {
             while (running) {
                 val canvas = holder.lockCanvas() ?: continue
                 try { time = System.currentTimeMillis() - startTime; phase = cl(time / 6200f, 0f, 1f); update(); render(canvas) }
-                finally { holder.unlockCanvasAndPost(canvas) }
+                catch (_: Exception) {}
+                finally { try { holder.unlockCanvasAndPost(canvas) } catch (_: Exception) {} }
                 try { sleep(16) } catch (_: InterruptedException) { break }
             }
         }
