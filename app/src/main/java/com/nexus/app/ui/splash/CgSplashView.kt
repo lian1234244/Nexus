@@ -114,7 +114,7 @@ class CgSplashView @JvmOverloads constructor(
     }
 
     private fun render(c: Canvas) {
-        c.drawColor(Color.BLACK)
+        c.drawColor(0xFF1A1A2E.toInt())
         drawBg(c); drawNebula(c); drawStars(c); drawDust(c); drawOrbs(c); drawRibbons(c); drawWeb(c); drawCore(c); drawSparks(c); drawLogo(c); drawText(c); drawGrain(c); drawVignette(c)
     }
 

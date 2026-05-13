@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="nexus_black">#FF000000</color>
-    <color name="nexus_deep_space">#FF050510</color>
+    <color name="nexus_black">#FF1A1A2E</color>
+    <color name="nexus_deep_space">#FFF0F2F5</color>
     <color name="nexus_neon_cyan">#FF00F5FF</color>
     <color name="nexus_neon_blue">#FF0066FF</color>
     <color name="nexus_neon_purple">#FF8B5CF6</color>
