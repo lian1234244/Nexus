@@ -160,7 +160,23 @@ E:\NexusApp\
 
 > 以下是开发过程中实际踩过的坑，务必避免重复犯错。
 
-### 1. PowerShell 不支持 `&&` 语句分隔符
+### 1. ⚠️⚠️⚠️ `RadialGradient` API 34 构造函数导致低版本手机闪退（最致命！）
+- **错误**：`compileSdk=34` 但 `minSdk=24`，直接使用 `RadialGradient(x, y, r, longArrayOf(...), floatArrayOf(...), tileMode)` — 这个构造函数是 **API 34 新增**，在 API 33 及以下设备上运行时直接 `NoSuchMethodError` 闪退
+- **后果**：APP 一启动（开屏动画 `CgSplashView.drawBg` 就调用 RadialGradient）立即崩溃，任何手机只要不是 Android 14+ 都 100% 闪退
+- **正确**：必须做 API 级别判断：
+  ```kotlin
+  private fun radialGrad(cx: Float, cy: Float, r: Float, colors: IntArray, stops: FloatArray, tile: Shader.TileMode): RadialGradient {
+      return if (Build.VERSION.SDK_INT >= 34) {
+          RadialGradient(cx, cy, r, colors.map { it.toLong() }.toLongArray(), stops, tile)
+      } else {
+          @Suppress("DEPRECATION")
+          RadialGradient(cx, cy, r, colors, stops, tile)
+      }
+  }
+  ```
+- **注意**：所有 `RadialGradient`/`LinearGradient`/`SweepGradient` 的颜色参数在 API 34+ 从 `Int`/`IntArray` 变为 `Long`/`LongArray`。**任何直接使用新签名的地方都必须加 API 守卫，否则低版本闪退！**
+
+### 2. PowerShell 不支持 `&&` 语句分隔符
 - **错误**：`cd E:/NexusApp && git status` → 解析错误
 - **正确**：PowerShell中使用 `;` 连接命令：`cd E:/NexusApp; git status`
 - **注意**：Git Bash环境可用 `&&`，PowerShell不可
@@ -204,18 +220,16 @@ E:\NexusApp\
 - **错误**：`<set>` 内含多个 `<objectAnimator>` 用于同一 target → 运行时崩溃或无效
 - **正确**：每个 `<target>` 只能引用一个 `<objectAnimator>`。如需同时动画scaleX和scaleY，需拆分为两个 `<target>` 指向不同动画文件
 
-### 11. API 34+ 的 `RadialGradient` 颜色参数必须是 `Long`/`LongArray`
-- **错误**：`RadialGradient(x, y, r, intColor1, intColor2, tileMode)` → 类型不匹配，推断为 `Int` 但期望 `Long`
-- **正确**：API 34 (compileSdk=34) 中颜色使用 `Long`：
-  - 两色构造：改用多色构造 `RadialGradient(x, y, r, longArrayOf(color1.toLong(), color2.toLong()), floatArrayOf(0f, 1f), tileMode)`
-  - 多色构造：`intArrayOf(...)` 改为 `longArrayOf(...toLong())`
-- **关键**：不要用两色构造函数传 `.toLong()`，Kotlin会将其匹配到多色构造函数（签名歧义），导致"Long但期望LongArray"错误。**统一用 `longArrayOf` + `floatArrayOf` 多色构造函数**
+### 12. API 34+ 的 `RadialGradient` 颜色参数类型变更（编译时类型不匹配）
+- **错误**：`RadialGradient(x, y, r, intColor1, intColor2, tileMode)` → 编译时类型不匹配，API 34+ 期望 `Long`/`LongArray`
+- **正确**：不要直接用新签名（会导致低版本闪退，见第1条），统一用兼容包装方法 `radialGrad()`/`radialGrad2()`，内部根据 `Build.VERSION.SDK_INT` 分发
+- **关键**：不要用两色构造函数传 `.toLong()`，Kotlin会将其匹配到多色构造函数（签名歧义），导致"Long但期望LongArray"编译错误
 
-### 12. Kotlin `surfaceChanged` 参数名不能与父方法重复
+### 13. Kotlin `surfaceChanged` 参数名不能与父方法重复
 - **错误**：`override fun surfaceChanged(h: SurfaceHolder, f: Int, w: Int, h: Int)` → 参数 `h` 冲突
 - **正确**：`override fun surfaceChanged(holder: SurfaceHolder, f: Int, w: Int, h: Int)`
 
-### 13. Kotlin 链式 `withEndAction` 的花括号缩进可能导致解析错误
+### 14. Kotlin 链式 `withEndAction` 的花括号缩进可能导致解析错误
 - **错误**：
   ```kotlin
   view.animate()
@@ -233,7 +247,7 @@ E:\NexusApp\
   }
   ```
 
-### 14. `onBackPressed()` 空实现不能用 `{}` 且不能递归调用自身
+### 15. `onBackPressed()` 空实现不能用 `{}` 且不能递归调用自身
 - **错误**：`override fun onBackPressed() { onBackPressed() }` → 无限递归StackOverflow
 - **正确**：`override fun onBackPressed() { /* no-op */ }`
 
