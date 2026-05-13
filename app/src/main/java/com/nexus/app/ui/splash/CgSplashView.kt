@@ -9,722 +9,279 @@ import kotlin.math.*
 import kotlin.random.Random
 
 class CgSplashView @JvmOverloads constructor(
-    context: Context,
-    attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0
+    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : SurfaceView(context, attrs, defStyleAttr), SurfaceHolder.Callback {
 
-    private val renderThread = RenderThread()
+    private val thread = RenderThread()
     @Volatile private var running = false
-
-    private var phase = 0f
-    private var time = 0L
-    private var startTime = 0L
-    private var frameCount = 0
-
-    private val d get() = context.resources.displayMetrics.density
-    private val cx get() = width / 2f
-    private val cy get() = height / 2f
+    private var phase = 0f; private var time = 0L; private var startTime = 0L
+    private val cx get() = width / 2f; private val cy get() = height / 2f
     private val R get() = min(width, height) / 2f
+    private var logoAlpha = 0f; private var textAlpha = 0f; private var arcP = 0f
+    private var webP = 0f; private var glowP = 0f
+    private val TAU = (Math.PI * 2).toFloat()
 
-    private var logoAlpha = 0f
-    private var textAlpha = 0f
-    private var convergenceP = 0f
-    private var corePulse = 0f
-    private var shockP = 0f
-    private var shockAlpha = 0f
-    private var bloomIntensity = 0f
-
-    private val stars = Array(400) { Star() }
-    private val dustMotes = Array(200) { DustMote() }
-    private val energyOrbs = Array(120) { EnergyOrb() }
-    private val ribbons = Array(8) { EnergyRibbon() }
+    private val stars3 = Array(3) { l ->
+        val cfg = listOf(Triple(500, .3f, .08f), Triple(200, .6f, .3f), Triple(70, 1f, .8f))[l]
+        Array(cfg.first) { Star(cfg.third) }
+    }
+    private val dustArr = Array(250) { Dust() }
+    private val orbArr = Array(160) { Orb() }
+    private val ribbonArr = Array(10) { Ribbon() }
+    private val webPts = Array(16) { floatArrayOf(0f, 0f) }
+    private val webEdges = mutableListOf<Pair<Int, Int>>()
     private val sparks = mutableListOf<Spark>()
-    private val nebulae = Array(5) { Nebula() }
-    private val grainBuffer = IntArray(256)
 
-    private val additivePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        xfermode = PorterDuffXfermode(PorterDuff.Mode.ADD)
-    }
-    private val screenPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        xfermode = PorterDuffXfermode(PorterDuff.Mode.SCREEN)
-    }
-    private val normalPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
-    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
-    }
+    private val addP = Paint(Paint.ANTI_ALIAS_FLAG).apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.ADD) }
+    private val nP = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val sP = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    private val tP = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD) }
 
-    private var offscreen: Bitmap? = null
-    private var offCanvas: Canvas? = null
+    private fun rand(a: Float, b: Float) = a + Random.nextFloat() * (b - a)
+    private fun randI(a: Int, b: Int) = Random.nextInt(a, b + 1)
+    private fun cl(v: Float, a: Float, b: Float) = v.coerceIn(a, b)
+    private fun lr(a: Float, b: Float, t: Float) = a + (b - a) * t
+    private fun lrI(a: Int, b: Int, t: Float) = (a + (b - a) * t).toInt()
+    private fun ease(t: Float): Float { val c = cl(t, 0f, 1f); return if (c < .5f) 4 * c * c * c else 1 - (-2 * c + 2).pow(3) / 2f }
 
-    init {
-        holder.addCallback(this)
-        repeat(256) { grainBuffer[it] = Random.nextInt(60) - 30 }
-    }
+    init { holder.addCallback(this) }
 
-    override fun surfaceCreated(holder: SurfaceHolder) {
-        startTime = System.currentTimeMillis()
-        running = true
-        if (!renderThread.isAlive) renderThread.start()
-    }
-
-    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-        if (width > 0 && height > 0) {
-            offscreen?.recycle()
-            offscreen = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-            offCanvas = Canvas(offscreen!!)
+    private fun rebuildWeb() {
+        for (i in webPts.indices) {
+            val a = rand(0f, TAU); val d = rand(.1f, .5f)
+            webPts[i][0] = cx + cos(a) * d * R; webPts[i][1] = cy + sin(a) * d * R
+        }
+        webEdges.clear()
+        for (i in webPts.indices) {
+            (webPts.indices.filter { it != i }).sortedBy { j -> hypot((webPts[i][0] - webPts[j][0]).toDouble(), (webPts[i][1] - webPts[j][1]).toDouble()) }.take(2).forEach { j ->
+                val e = Pair(minOf(i, j), maxOf(i, j))
+                if (webEdges.none { it == e }) webEdges.add(e)
+            }
         }
     }
 
-    override fun surfaceDestroyed(holder: SurfaceHolder) {
-        running = false
-        renderThread.interrupt()
+    private fun soft(c: Canvas, x: Float, y: Float, r: Float, color: Int, add: Boolean) {
+        if (r <= 0 || Color.alpha(color) <= 1) return
+        val p = if (add) addP else nP
+        p.shader = RadialGradient(x, y, r, color, Color.argb(0, Color.red(color), Color.green(color), Color.blue(color)), Shader.TileMode.CLAMP)
+        c.drawCircle(x, y, r, p); p.shader = null
     }
+
+    override fun surfaceCreated(h: SurfaceHolder) { startTime = System.currentTimeMillis(); running = true; if (!thread.isAlive) thread.start() }
+    override fun surfaceChanged(h: SurfaceHolder, f: Int, w: Int, h: Int) { rebuildWeb() }
+    override fun surfaceDestroyed(h: SurfaceHolder) { running = false; thread.interrupt() }
 
     private inner class RenderThread : Thread() {
         override fun run() {
             while (running) {
                 val canvas = holder.lockCanvas() ?: continue
-                try {
-                    time = System.currentTimeMillis() - startTime
-                    phase = (time / 6000f).coerceIn(0f, 1f)
-                    frameCount++
-                    update()
-                    render(canvas)
-                } finally {
-                    holder.unlockCanvasAndPost(canvas)
-                }
+                try { time = System.currentTimeMillis() - startTime; phase = cl(time / 6200f, 0f, 1f); update(); render(canvas) }
+                finally { holder.unlockCanvasAndPost(canvas) }
                 try { sleep(16) } catch (_: InterruptedException) { break }
             }
         }
     }
 
     private fun update() {
-        val dt = 0.016f
-
-        when {
-            phase < 0.25f -> {
-                convergenceP = 0f; logoAlpha = 0f; textAlpha = 0f
-                bloomIntensity = phase / 0.25f * 0.3f
-            }
-            phase < 0.5f -> {
-                val p = (phase - 0.25f) / 0.25f
-                convergenceP = ease(p)
-                logoAlpha = ease(p)
-                bloomIntensity = 0.3f + p * 0.7f
-            }
-            phase < 0.7f -> {
-                convergenceP = 1f; logoAlpha = 1f
-                textAlpha = ease((phase - 0.5f) / 0.2f)
-                bloomIntensity = 1f
-            }
-            else -> {
-                convergenceP = 1f; logoAlpha = 1f; textAlpha = 1f
-                bloomIntensity = 1f - (phase - 0.7f) / 0.3f * 0.3f
-            }
-        }
-
-        corePulse = if (phase in 0.2f..0.65f) {
-            ease((phase - 0.2f) / 0.45f)
-        } else 0f
-
-        if (phase in 0.35f..0.55f) {
-            val sp = (phase - 0.35f) / 0.2f
-            shockP = sp
-            shockAlpha = (1f - sp).pow(2) * 0.9f
-        } else {
-            shockAlpha = 0f
-        }
-
-        stars.forEach { it.update(dt) }
-        dustMotes.forEach { it.update(dt, phase) }
-        energyOrbs.forEach { it.update(dt, phase, convergenceP) }
-        ribbons.forEach { it.update(dt, phase) }
-        nebulae.forEach { it.update(dt, phase) }
-
-        if (phase > 0.3f && sparks.size < 100 && frameCount % 2 == 0) {
-            repeat(3) { sparks.add(Spark()) }
-        }
-        sparks.forEach { it.update(dt) }
-        sparks.removeAll { it.life <= 0 }
+        val dt = .016f
+        glowP = ease(cl((phase - .05f) / .2f, 0f, 1f)); arcP = ease(cl((phase - .18f) / .25f, 0f, 1f))
+        webP = ease(cl((phase - .28f) / .2f, 0f, 1f)); logoAlpha = ease(cl((phase - .36f) / .2f, 0f, 1f))
+        textAlpha = ease(cl((phase - .52f) / .15f, 0f, 1f))
+        stars3.forEach { it.forEach { s -> s.a = s.baseA * (.35f + .65f * (sin(time * .001f * s.tw + s.to) * .5f + .5f)) * glowP } }
+        dustArr.forEach { it.update(dt, phase) }; orbArr.forEach { it.update(dt, phase, arcP) }; ribbonArr.forEach { it.update(dt, phase, arcP) }
+        if (phase > .25f && phase < .55f && sparks.size < 100 && Random.nextFloat() < .35f) repeat(3) { sparks.add(Spark()) }
+        sparks.forEach { it.update(dt) }; sparks.removeAll { it.life <= 0 }
     }
 
-    private fun render(canvas: Canvas) {
-        canvas.drawColor(Color.BLACK)
-
-        drawNebulae(canvas)
-        drawStars(canvas)
-        drawDustMotes(canvas)
-        drawRibbons(canvas)
-        drawEnergyOrbs(canvas)
-        drawShockwave(canvas)
-        drawCoreSphere(canvas)
-        drawSparks(canvas)
-        drawLogoGlow(canvas)
-        drawLogo(canvas)
-        drawLensFlare(canvas)
-        drawTitle(canvas)
-        applyBloom(canvas)
-        applyGrain(canvas)
-        applyVignette(canvas)
+    private fun render(c: Canvas) {
+        c.drawColor(Color.BLACK)
+        drawBg(c); drawNebula(c); drawStars(c); drawDust(c); drawOrbs(c); drawRibbons(c); drawWeb(c); drawCore(c); drawSparks(c); drawLogo(c); drawFlare(c); drawText(c); drawGrain(c); drawVignette(c)
     }
 
-    private fun drawSoftCircle(canvas: Canvas, x: Float, y: Float, r: Float, color: Int, addi: Boolean) {
-        if (r <= 0) return
-        val a = Color.alpha(color)
-        if (a <= 1) return
-        val paint = if (addi) additivePaint else normalPaint
-        paint.shader = RadialGradient(x, y, r,
-            color, Color.argb(0, Color.red(color), Color.green(color), Color.blue(color)),
-            Shader.TileMode.CLAMP)
-        canvas.drawCircle(x, y, r, paint)
-        paint.shader = null
+    private fun drawBg(c: Canvas) {
+        val bg = RadialGradient(cx, cy, 0f, cx, cy, R * 1.6f, intArrayOf(0xFF060A1A.toInt(), 0xFF030512.toInt(), 0xFF01020A.toInt()), floatArrayOf(0f, .6f, 1f), Shader.TileMode.CLAMP)
+        nP.shader = bg; c.drawRect(0f, 0f, width.toFloat(), height.toFloat(), nP); nP.shader = null
     }
 
-    private fun drawNebulae(canvas: Canvas) {
-        canvas.saveLayer(null, null)
-        nebulae.forEach { n ->
-            val a = (n.alpha * 255).toInt().coerceIn(0, 255)
-            drawSoftCircle(canvas, n.x, n.y, n.r,
-                Color.argb(a, Color.red(n.color), Color.green(n.color), Color.blue(n.color)), true)
+    private fun drawNebula(c: Canvas) {
+        c.saveLayer(null, null)
+        arrayOf(floatArrayOf(-.28f, -.22f, .38f, 10f, 5f, 40f), floatArrayOf(.22f, .18f, .32f, 18f, 3f, 28f), floatArrayOf(.05f, -.28f, .28f, 5f, 12f, 35f)).forEachIndexed { i, v ->
+            val nx = cx + v[0] * R + sin(time * .00012f + i * 2f).toFloat() * R * .03f
+            val ny = cy + v[1] * R + cos(time * .0001f + i * 2f).toFloat() * R * .025f
+            val nr = R * v[2] * (.8f + glowP * .2f)
+            val na = cl(glowP * .1f + sin(time * .0008f + i * 1.5f).toFloat() * .02f, .0f, .12f)
+            soft(c, nx, ny, nr, Color.argb((na * 255).toInt(), v[3].toInt(), v[4].toInt(), v[5].toInt()), true)
         }
-        canvas.restore()
+        c.restore()
     }
 
-    private fun drawStars(canvas: Canvas) {
-        stars.forEach { s ->
-            val a = (s.alpha * 255).toInt().coerceIn(0, 255)
-            if (a <= 2) return@forEach
-            normalPaint.color = Color.argb(a, 255, 255, 255)
-            normalPaint.shader = null
-            canvas.drawCircle(s.x, s.y, s.size, normalPaint)
-            if (s.size > 1.2f && a > 80) {
-                val ga = (a * 0.2f).toInt().coerceIn(0, 255)
-                drawSoftCircle(canvas, s.x, s.y, s.size * 4f,
-                    Color.argb(ga, 200, 220, 255), true)
+    private fun drawStars(c: Canvas) {
+        c.saveLayer(null, null)
+        val dX = sin(time * .00007f).toFloat() * R * .015f; val dY = cos(time * .00005f).toFloat() * R * .012f
+        val pxf = floatArrayOf(.3f, .6f, 1f)
+        stars3.forEachIndexed { li, layer ->
+            val px = dX * pxf[li]; val py = dY * pxf[li]
+            layer.forEach { s ->
+                val sx = ((s.x * width + px) % width + width) % width; val sy = ((s.y * height + py) % height + height) % height
+                if (s.a < .01f) return@forEach
+                val ai = (s.a * 255).toInt().coerceIn(0, 255)
+                val r2 = lrI(170, 255, s.temp); val g2 = lrI(180, 255, s.temp); val b2 = lrI(210, 255, s.temp)
+                nP.color = Color.argb(ai, r2, g2, b2); nP.shader = null; c.drawCircle(sx, sy, s.sz, nP)
+                if (s.sz > 1f && s.a > .12f) soft(c, sx, sy, s.sz * 4, Color.argb((ai * .1f).toInt().coerceIn(0, 255), r2, g2, b2), true)
             }
         }
+        c.restore()
     }
 
-    private fun drawDustMotes(canvas: Canvas) {
-        canvas.saveLayer(null, null)
-        dustMotes.forEach { m ->
-            val a = (m.alpha * 255).toInt().coerceIn(0, 255)
-            if (a <= 2) return@forEach
-            drawSoftCircle(canvas, m.x, m.y, m.size,
-                Color.argb(a, Color.red(m.color), Color.green(m.color), Color.blue(m.color)), true)
-            if (m.trailLen > 0.5f) {
-                strokePaint.color = Color.argb((a * 0.4f).toInt().coerceIn(0, 255),
-                    Color.red(m.color), Color.green(m.color), Color.blue(m.color))
-                strokePaint.strokeWidth = m.size * 0.6f
-                strokePaint.strokeCap = Paint.Cap.ROUND
-                canvas.drawLine(m.x, m.y, m.tx, m.ty, strokePaint)
-            }
+    private fun drawDust(c: Canvas) {
+        c.saveLayer(null, null)
+        dustArr.forEach { d -> if (d.a < .01f) return@forEach; val ai = (d.a * 255).toInt().coerceIn(0, 255)
+            val tLen = hypot((d.x - d.px).toDouble(), (d.y - d.py).toDouble()).toFloat()
+            if (tLen > .5f) { sP.color = Color.argb((ai * .25f).toInt().coerceIn(0, 255), d.cr, d.cg, d.cb); sP.strokeWidth = d.sz * .4f; sP.strokeCap = Paint.Cap.ROUND; c.drawLine(d.px, d.py, d.x, d.y, sP) }
+            soft(c, d.x, d.y, d.sz, Color.argb(ai, d.cr, d.cg, d.cb), true)
         }
-        canvas.restore()
+        c.restore()
     }
 
-    private fun drawRibbons(canvas: Canvas) {
-        canvas.saveLayer(null, null)
-        ribbons.forEach { ribbon ->
-            if (ribbon.alpha <= 0.01f) return@forEach
-            val pts = ribbon.points
-            if (pts.size < 2) return@forEach
-            for (i in 1 until pts.size) {
-                val segAlpha = ribbon.alpha * (i.toFloat() / pts.size)
-                val a = (segAlpha * 255).toInt().coerceIn(0, 255)
-                if (a <= 1) continue
-                val t = i.toFloat() / pts.size
-                val r = lerp(Color.red(ribbon.c1), Color.red(ribbon.c2), t)
-                val g = lerp(Color.green(ribbon.c1), Color.green(ribbon.c2), t)
-                val b = lerp(Color.blue(ribbon.c1), Color.blue(ribbon.c2), t)
-                strokePaint.color = Color.argb(a, r, g, b)
-                strokePaint.strokeWidth = ribbon.width * (0.3f + 0.7f * t)
-                strokePaint.strokeCap = Paint.Cap.ROUND
-                canvas.drawLine(pts[i - 1].first, pts[i - 1].second,
-                    pts[i].first, pts[i].second, strokePaint)
-            }
-            val last = pts.last()
-            val la = (ribbon.alpha * 255).toInt().coerceIn(0, 255)
-            drawSoftCircle(canvas, last.first, last.second, ribbon.width * 3f,
-                Color.argb(la, Color.red(ribbon.c2), Color.green(ribbon.c2), Color.blue(ribbon.c2)), true)
+    private fun drawOrbs(c: Canvas) {
+        c.saveLayer(null, null)
+        orbArr.forEach { o -> if (o.a < .02f) return@forEach; val ai = (o.a * 255).toInt().coerceIn(0, 255)
+            if (hypot((o.x - o.px).toDouble(), (o.y - o.py).toDouble()).toFloat() > 1f) soft(c, o.px, o.py, o.sz * .7f, Color.argb((ai * .2f).toInt().coerceIn(0, 255), o.cr, o.cg, o.cb), true)
+            soft(c, o.x, o.y, o.sz, Color.argb(ai, o.cr, o.cg, o.cb), true)
         }
-        canvas.restore()
+        c.restore()
     }
 
-    private fun drawEnergyOrbs(canvas: Canvas) {
-        canvas.saveLayer(null, null)
-        energyOrbs.forEach { orb ->
-            val a = (orb.alpha * 255).toInt().coerceIn(0, 255)
-            if (a <= 2) return@forEach
-            drawSoftCircle(canvas, orb.x, orb.y, orb.size,
-                Color.argb(a, Color.red(orb.color), Color.green(orb.color), Color.blue(orb.color)), true)
-            if (orb.trailDist > 1f) {
-                val ta = (a * 0.35f).toInt().coerceIn(0, 255)
-                drawSoftCircle(canvas, orb.tx, orb.ty, orb.size * 0.7f,
-                    Color.argb(ta, Color.red(orb.color), Color.green(orb.color), Color.blue(orb.color)), true)
-            }
+    private fun drawRibbons(c: Canvas) {
+        c.saveLayer(null, null)
+        ribbonArr.forEach { rb -> if (rb.a < .01f || rb.pts.size < 2) return@forEach
+            for (i in 1 until rb.pts.size) { val t = i.toFloat() / rb.pts.size; val sa = rb.a * t; if (sa < .005f) continue
+                sP.color = Color.argb((sa * 255).toInt().coerceIn(0, 255), lrI(rb.c1[0], rb.c2[0], t), lrI(rb.c1[1], rb.c2[1], t), lrI(rb.c1[2], rb.c2[2], t))
+                sP.strokeWidth = rb.w * (.2f + .8f * t); sP.strokeCap = Paint.Cap.ROUND; c.drawLine(rb.pts[i - 1][0], rb.pts[i - 1][1], rb.pts[i][0], rb.pts[i][1], sP) }
+            if (rb.pts.size > 1) { val tip = rb.pts.last(); soft(c, tip[0], tip[1], rb.w * 4, Color.argb((rb.a * 180).toInt().coerceIn(0, 255), rb.c2[0], rb.c2[1], rb.c2[2]), true) }
         }
-        canvas.restore()
+        c.restore()
     }
 
-    private fun drawShockwave(canvas: Canvas) {
-        if (shockAlpha <= 0.01f) return
-        val r1 = shockP * R * 2.2f
-        val r2 = shockP * R * 1.6f
-        for (i in 0..2) {
-            val ri = r1 - i * 15f * d
-            if (ri <= 0) continue
-            val a = (shockAlpha * (1f - i * 0.3f) * 255).toInt().coerceIn(0, 255)
-            strokePaint.color = Color.argb(a, 0, 230, 255)
-            strokePaint.strokeWidth = (3f - i * 0.8f) * d
-            strokePaint.strokeCap = Paint.Cap.ROUND
-            canvas.drawCircle(cx, cy, ri, strokePaint)
-        }
-        val a2 = (shockAlpha * 0.5f * 255).toInt().coerceIn(0, 255)
-        strokePaint.color = Color.argb(a2, 160, 100, 255)
-        strokePaint.strokeWidth = 1.5f * d
-        canvas.drawCircle(cx, cy, r2, strokePaint)
+    private fun drawWeb(c: Canvas) {
+        if (webP < .01f) return; c.saveLayer(null, null)
+        val tot = webEdges.size.toFloat()
+        webEdges.forEachIndexed { i, (a, b) -> val eS = i / tot; val eE = (i + 1) / tot; if (webP < eS) return@forEachIndexed
+            val ep = cl((webP - eS) / (eE - eS), 0f, 1f); val p1 = webPts[a]; val p2 = webPts[b]
+            sP.color = Color.argb((ep * 38).toInt().coerceIn(0, 255), 0, 200, 255); sP.strokeWidth = .6f; sP.strokeCap = Paint.Cap.ROUND
+            c.drawLine(p1[0], p1[1], lr(p1[0], p2[0], ep), lr(p1[1], p2[1], ep), sP) }
+        if (webP > .1f) { val na = min((webP - .1f) / .4f, 1f) * .3f; webPts.forEach { nP.color = Color.argb((na * 255).toInt().coerceIn(0, 255), 0, 210, 255); c.drawCircle(it[0], it[1], 1.5f, nP) } }
+        c.restore()
     }
 
-    private fun drawCoreSphere(canvas: Canvas) {
-        if (corePulse <= 0.01f) return
-        val baseR = R * 0.06f * corePulse
-        val breath = 1f + sin(time * 0.004f).toFloat() * 0.15f
-        val r = baseR * breath
-
-        drawSoftCircle(canvas, cx, cy, r * 3f,
-            Color.argb((corePulse * 30).toInt().coerceIn(0, 255), 0, 180, 255), true)
-        drawSoftCircle(canvas, cx, cy, r * 1.8f,
-            Color.argb((corePulse * 80).toInt().coerceIn(0, 255), 0, 200, 255), true)
-
-        normalPaint.shader = RadialGradient(cx, cy, r,
-            Color.argb((corePulse * 255).toInt().coerceIn(0, 255), 180, 240, 255),
-            Color.argb((corePulse * 120).toInt().coerceIn(0, 255), 0, 180, 255),
-            Shader.TileMode.CLAMP)
-        canvas.drawCircle(cx, cy, r, normalPaint)
-        normalPaint.shader = null
+    private fun drawCore(c: Canvas) {
+        if (glowP < .01f) return; c.saveLayer(null, null)
+        val cR = R * .04f * glowP * (1 + sin(time * .003f).toFloat() * .1f)
+        arrayOf(floatArrayOf(cR * 14, .02f), floatArrayOf(cR * 7, .05f), floatArrayOf(cR * 3.5f, .13f), floatArrayOf(cR * 1.8f, .28f), floatArrayOf(cR, .45f)).forEach { soft(c, cx, cy, it[0], Color.argb((glowP * it[1] * 255).toInt().coerceIn(0, 255), 0, 185, 255), true) }
+        nP.shader = RadialGradient(cx, cy, 0f, cx, cy, cR, Color.argb((glowP * 230).toInt().coerceIn(0, 255), 230, 248, 255), Color.argb((glowP * 128).toInt().coerceIn(0, 255), 0, 215, 255), Shader.TileMode.CLAMP)
+        c.drawCircle(cx, cy, cR, nP); nP.shader = null; c.restore()
     }
 
-    private fun drawSparks(canvas: Canvas) {
-        canvas.saveLayer(null, null)
-        sparks.forEach { sp ->
-            val a = (sp.alpha * 255).toInt().coerceIn(0, 255)
-            if (a <= 2) return@forEach
-            drawSoftCircle(canvas, sp.x, sp.y, sp.size,
-                Color.argb(a, Color.red(sp.color), Color.green(sp.color), Color.blue(sp.color)), true)
-            val ta = (a * 0.5f).toInt().coerceIn(0, 255)
-            strokePaint.color = Color.argb(ta, Color.red(sp.color), Color.green(sp.color), Color.blue(sp.color))
-            strokePaint.strokeWidth = sp.size * 0.4f
-            strokePaint.strokeCap = Paint.Cap.ROUND
-            canvas.drawLine(sp.x, sp.y, sp.x - sp.vx * 0.03f, sp.y - sp.vy * 0.03f, strokePaint)
-        }
-        canvas.restore()
+    private fun drawSparks(c: Canvas) {
+        c.saveLayer(null, null)
+        sparks.forEach { soft(c, it.x, it.y, it.sz * 2, Color.argb((it.life * 115).toInt().coerceIn(0, 255), it.cr, it.cg, it.cb), true)
+            sP.color = Color.argb((it.life * 38).toInt().coerceIn(0, 255), it.cr, it.cg, it.cb); sP.strokeWidth = it.sz * .3f; sP.strokeCap = Paint.Cap.ROUND; c.drawLine(it.x, it.y, it.x - it.vx * .02f, it.y - it.vy * .02f, sP) }
+        c.restore()
     }
 
-    private fun drawLogoGlow(canvas: Canvas) {
-        if (logoAlpha <= 0.01f) return
-        canvas.saveLayer(null, null)
-        val glowR = R * 0.2f
-        for (i in 6 downTo 1) {
-            val r = glowR * (1f + i * 0.5f)
-            val a = logoAlpha * 0.08f / i
-            drawSoftCircle(canvas, cx, cy, r,
-                Color.argb((a * 255).toInt().coerceIn(0, 255), 0, 200, 255), true)
-        }
-        val pT = sin(time * 0.003f).toFloat() * 0.5f + 0.5f
-        drawSoftCircle(canvas, cx, cy, glowR * (1.2f + pT * 0.4f),
-            Color.argb((logoAlpha * 0.1f * 255).toInt().coerceIn(0, 255), 120, 80, 255), true)
-        canvas.restore()
+    private fun drawLogo(c: Canvas) {
+        if (logoAlpha < .01f) return
+        val sz = R * .13f; val sc = .3f + .7f * logoAlpha; val rot = time * .0005f
+        c.save(); c.translate(cx, cy); c.scale(sc, sc)
+        val drawHex: (Float, Float) -> Unit = { size, off -> val path = Path(); for (i in 0..5) { val a = Math.PI.toFloat() / 3f * i - Math.PI.toFloat() / 6f + off; val x2 = cos(a) * size; val y2 = sin(a) * size; if (i == 0) path.moveTo(x2, y2) else path.lineTo(x2, y2) }; path.close(); c.drawPath(path, sP) }
+        c.saveLayer(null, null)
+        c.save(); c.rotate(-rot * 6f % TAU); sP.color = Color.argb((logoAlpha * 31).toInt().coerceIn(0, 255), 0, 170, 255); sP.strokeWidth = .5f; drawHex(sz * 1.3f, 0f); c.restore()
+        c.save(); c.rotate(rot * 10f % TAU); sP.color = Color.argb((logoAlpha * 38).toInt().coerceIn(0, 255), 70, 40, 180); sP.strokeWidth = .5f; drawHex(sz * 1.12f, Math.PI.toFloat() / 6f); c.restore()
+        c.restore()
+        sP.color = Color.argb((logoAlpha * 217).toInt().coerceIn(0, 255), 0, 220, 255); sP.strokeWidth = 1.8f; sP.strokeJoin = Paint.Join.ROUND; drawHex(sz, 0f)
+        val fp = Path(); for (i in 0..5) { val a = Math.PI.toFloat() / 3f * i - Math.PI.toFloat() / 6f; if (i == 0) fp.moveTo(cos(a) * sz, sin(a) * sz) else fp.lineTo(cos(a) * sz, sin(a) * sz) }; fp.close(); nP.color = Color.argb((logoAlpha * 10).toInt().coerceIn(0, 255), 0, 180, 255); c.drawPath(fp, nP)
+        c.save(); c.rotate(rot * 18f % TAU); sP.color = Color.argb((logoAlpha * 153).toInt().coerceIn(0, 255), 120, 65, 255); sP.strokeWidth = 1.3f; drawHex(sz * .48f, 0f); c.restore()
+        c.saveLayer(null, null)
+        val cR2 = sz * .1f; arrayOf(floatArrayOf(cR2 * 5, .08f), floatArrayOf(cR2 * 2.5f, .25f), floatArrayOf(cR2 * 1.2f, .6f)).forEach { soft(c, 0f, 0f, it[0], Color.argb((logoAlpha * it[1] * 255).toInt().coerceIn(0, 255), 0, 200, 255), true) }
+        nP.shader = RadialGradient(0f, 0f, 0f, 0f, 0f, cR2, Color.argb((logoAlpha * 230).toInt().coerceIn(0, 255), 210, 245, 255), Color.argb(0, 0, 180, 255), Shader.TileMode.CLAMP); c.drawCircle(0f, 0f, cR2, nP); nP.shader = null
+        c.restore(); c.restore()
     }
 
-    private fun drawLogo(canvas: Canvas) {
-        if (logoAlpha <= 0.01f) return
-        val size = R * 0.16f
-        val sc = 0.5f + 0.5f * convergenceP
-        val rot = time * 0.0008f
-
-        canvas.save()
-        canvas.translate(cx, cy)
-        canvas.scale(sc, sc)
-
-        val hex = hexPath(size)
-        strokePaint.strokeJoin = Paint.Join.ROUND
-        strokePaint.strokeCap = Paint.Cap.ROUND
-
-        strokePaint.color = Color.argb((logoAlpha * 255).toInt().coerceIn(0, 255), 0, 230, 255)
-        strokePaint.strokeWidth = 2.5f * d
-        canvas.drawPath(hex, strokePaint)
-
-        normalPaint.color = Color.argb((logoAlpha * 25).toInt().coerceIn(0, 255), 0, 200, 255)
-        canvas.drawPath(hex, normalPaint)
-
-        canvas.save()
-        canvas.rotate((rot * 25f) % 360f)
-        val inner = hexPath(size * 0.52f)
-        strokePaint.color = Color.argb((logoAlpha * 180).toInt().coerceIn(0, 255), 140, 90, 255)
-        strokePaint.strokeWidth = 1.5f * d
-        canvas.drawPath(inner, strokePaint)
-        canvas.restore()
-
-        canvas.save()
-        canvas.rotate((-rot * 15f) % 360f)
-        val outer = hexPath(size * 1.15f)
-        strokePaint.color = Color.argb((logoAlpha * 50).toInt().coerceIn(0, 255), 0, 200, 255)
-        strokePaint.strokeWidth = 1f * d
-        canvas.drawPath(outer, strokePaint)
-        canvas.restore()
-
-        drawSoftCircle(canvas, 0f, 0f, size * 0.18f,
-            Color.argb((logoAlpha * 255).toInt().coerceIn(0, 255), 200, 240, 255), false)
-
-        canvas.restore()
+    private fun drawFlare(c: Canvas) {
+        if (logoAlpha < .4f) return; c.saveLayer(null, null)
+        val fi = (logoAlpha - .4f) / .6f; val fl = R * .5f * fi
+        for (i in -2..2) { sP.color = Color.argb((fi * .05f * (1 - abs(i) / 3f) * 255).toInt().coerceIn(0, 255), 0, 190, 255); sP.strokeWidth = 1f - abs(i) * .25f; c.drawLine(cx - fl, cy + i * 3f, cx + fl, cy + i * 3f, sP) }
+        c.restore()
     }
 
-    private fun drawLensFlare(canvas: Canvas) {
-        if (logoAlpha < 0.5f) return
-        val intensity = (logoAlpha - 0.5f) * 2f * bloomIntensity
-        if (intensity <= 0.01f) return
-
-        canvas.saveLayer(null, null)
-        val flareAngle = time * 0.0002f
-        val streakLen = R * 0.8f * intensity
-        val a = (intensity * 0.25f * 255).toInt().coerceIn(0, 255)
-
-        for (i in -3..3) {
-            val offset = i * 8f * d
-            val sa = (a * (1f - abs(i) / 4f)).toInt().coerceIn(0, 255)
-            strokePaint.color = Color.argb(sa, 0, 200, 255)
-            strokePaint.strokeWidth = (2f - abs(i) * 0.4f) * d
-            canvas.drawLine(
-                cx - streakLen * cos(flareAngle) + offset * sin(flareAngle),
-                cy - streakLen * sin(flareAngle) - offset * cos(flareAngle),
-                cx + streakLen * cos(flareAngle) + offset * sin(flareAngle),
-                cy + streakLen * sin(flareAngle) - offset * cos(flareAngle),
-                strokePaint
-            )
-        }
-
-        val ghosts = floatArrayOf(0.3f, -0.5f, 0.8f, -1.2f, 1.6f)
-        val ghostColors = intArrayOf(
-            Color.argb(255, 0, 200, 255), Color.argb(255, 140, 80, 255),
-            Color.argb(255, 0, 255, 200), Color.argb(255, 255, 100, 150),
-            Color.argb(255, 100, 200, 255)
-        )
-        ghosts.forEachIndexed { i, g ->
-            val gx = cx + (cx - cx) * g
-            val gy = cy + (cy - cy) * g
-            val gr = R * 0.04f * abs(g) * intensity
-            val ga = (intensity * 0.15f * 255 / (abs(g) + 1f)).toInt().coerceIn(0, 255)
-            drawSoftCircle(canvas, gx, gy, gr,
-                Color.argb(ga, Color.red(ghostColors[i]), Color.green(ghostColors[i]), Color.blue(ghostColors[i])), true)
-        }
-        canvas.restore()
+    private fun drawText(c: Canvas) {
+        if (textAlpha < .01f) return
+        val tsz = R * .052f; val ty = cy + R * .24f
+        tP.textSize = tsz; tP.textAlign = Paint.Align.CENTER
+        val title = "NEXUS"; val tw = tP.measureText(title); val sx = cx - tw / 2f; val cw = tw / title.length
+        for (i in title.indices) { val cp = cl((textAlpha - i * .06f) / .25f, 0f, 1f); if (cp <= 0) continue; tP.color = Color.argb((cp * 230).toInt().coerceIn(0, 255), 0, 225, 255); c.drawText(title[i].toString(), sx + i * cw + cw / 2f, ty, tP) }
+        val sp2 = cl((textAlpha - .25f) / .35f, 0f, 1f)
+        if (sp2 > .01f) { nP.textSize = tsz * .28f; nP.textAlign = Paint.Align.CENTER; nP.color = Color.argb((sp2 * 153).toInt().coerceIn(0, 255), 110, 65, 255); nP.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL); c.drawText("INITIALIZING NEXUS", cx, ty + tsz * 1.15f, nP); nP.typeface = null }
+        val sp3 = cl((textAlpha - .3f) / .3f, 0f, 1f)
+        if (sp3 > .01f) { val pw = R * .18f; val py = ty + tsz * 2f; sP.color = Color.argb((sp3 * 38).toInt().coerceIn(0, 255), 0, 170, 255); sP.strokeWidth = .8f; sP.strokeCap = Paint.Cap.ROUND; c.drawLine(cx - pw, py, cx + pw, py, sP); sP.color = Color.argb((sp3 * 166).toInt().coerceIn(0, 255), 0, 220, 255); sP.strokeWidth = 1f; c.drawLine(cx - pw, py, cx - pw + pw * 2 * phase, py, sP); soft(c, cx - pw + pw * 2 * phase, py, 4f, Color.argb((sp3 * 128).toInt().coerceIn(0, 255), 0, 230, 255), true) }
     }
 
-    private fun drawTitle(canvas: Canvas) {
-        if (textAlpha <= 0.01f) return
-        val titleSize = R * 0.07f
-        textPaint.textSize = titleSize
-        textPaint.letterSpacing = 0.2f
-        textPaint.color = Color.argb((textAlpha * 255).toInt().coerceIn(0, 255), 0, 230, 255)
-        val title = "NEXUS"
-        val tw = textPaint.measureText(title)
-        val ty = cy + R * 0.3f
-        val tx = cx - tw / 2f
-        canvas.drawText(title, tx, ty, textPaint)
+    private fun drawGrain(c: Canvas) { for (i in 0 until 40) { nP.color = Color.argb(5, Random.nextInt(110, 146), Random.nextInt(110, 146), Random.nextInt(110, 146)); c.drawPoint(Random.nextFloat() * width, Random.nextFloat() * height, nP) } }
 
-        val scanX = tx + tw * ((time % 2000) / 2000f)
-        val scanA = (textAlpha * 150).toInt().coerceIn(0, 255)
-        canvas.saveLayer(null, null)
-        additivePaint.color = Color.argb(scanA, 100, 220, 255)
-        val scanRect = RectF(scanX - 15f * d, ty - titleSize, scanX + 15f * d, ty + 5f * d)
-        canvas.drawRect(scanRect, additivePaint)
-        additivePaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.ADD)
-        canvas.restore()
-
-        val subSz = titleSize * 0.35f
-        normalPaint.textSize = subSz
-        normalPaint.letterSpacing = 0.35f
-        normalPaint.color = Color.argb((textAlpha * 130).toInt().coerceIn(0, 255), 140, 90, 255)
-        normalPaint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
-        val sub = "INITIALIZING NEXUS"
-        val sw = normalPaint.measureText(sub)
-        canvas.drawText(sub, cx - sw / 2f, ty + subSz * 2f, normalPaint)
-        normalPaint.typeface = null
-
-        val pw = R * 0.25f
-        val py = ty + subSz * 3.8f
-        strokePaint.strokeWidth = 1.5f * d
-        strokePaint.strokeCap = Paint.Cap.ROUND
-        strokePaint.color = Color.argb((textAlpha * 40).toInt().coerceIn(0, 255), 0, 200, 255)
-        canvas.drawLine(cx - pw, py, cx + pw, py, strokePaint)
-        strokePaint.color = Color.argb((textAlpha * 220).toInt().coerceIn(0, 255), 0, 230, 255)
-        val fillEnd = cx - pw + pw * 2f * phase
-        canvas.drawLine(cx - pw, py, fillEnd, py, strokePaint)
-        drawSoftCircle(canvas, fillEnd, py, 6f * d,
-            Color.argb((textAlpha * 200).toInt().coerceIn(0, 255), 0, 230, 255), true)
+    private fun drawVignette(c: Canvas) {
+        val vig = RadialGradient(cx, cy, R * .4f, cx, cy, R * 1.4f, intArrayOf(Color.TRANSPARENT, Color.TRANSPARENT, Color.argb(89, 0, 0, 0), Color.argb(237, 0, 0, 0)), floatArrayOf(0f, .5f, .82f, 1f), Shader.TileMode.CLAMP)
+        nP.shader = vig; c.drawRect(0f, 0f, width.toFloat(), height.toFloat(), nP); nP.shader = null
     }
-
-    private fun applyBloom(canvas: Canvas) {
-        if (bloomIntensity <= 0.01f) return
-        canvas.saveLayer(null, null)
-        val points = mutableListOf<Triple<Float, Float, Int>>()
-        energyOrbs.filter { it.alpha > 0.3f }.forEach {
-            points.add(Triple(it.x, it.y, it.color))
-        }
-        sparks.filter { it.alpha > 0.5f }.take(20).forEach {
-            points.add(Triple(it.x, it.y, it.color))
-        }
-        if (corePulse > 0.1f) {
-            points.add(Triple(cx, cy, Color.argb(255, 0, 200, 255)))
-        }
-        points.take(30).forEach { (x, y, c) ->
-            val br = R * 0.08f * bloomIntensity
-            val ba = (bloomIntensity * 0.06f * 255).toInt().coerceIn(0, 255)
-            drawSoftCircle(canvas, x, y, br,
-                Color.argb(ba, Color.red(c), Color.green(c), Color.blue(c)), true)
-        }
-        canvas.restore()
-    }
-
-    private fun applyGrain(canvas: Canvas) {
-        val ga = 12
-        for (i in 0 until 80) {
-            val gx = Random.nextFloat() * width
-            val gy = Random.nextFloat() * height
-            val gv = grainBuffer[Random.nextInt(256)] + 128
-            normalPaint.color = Color.argb(ga, gv, gv, gv)
-            canvas.drawPoint(gx, gy, normalPaint)
-        }
-    }
-
-    private fun applyVignette(canvas: Canvas) {
-        val gradient = RadialGradient(cx, cy, R * 1.3f,
-            intArrayOf(Color.TRANSPARENT, Color.TRANSPARENT, Color.argb(200, 0, 0, 0)),
-            floatArrayOf(0f, 0.55f, 1f), Shader.TileMode.CLAMP)
-        normalPaint.shader = gradient
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), normalPaint)
-        normalPaint.shader = null
-    }
-
-    private fun hexPath(size: Float): Path {
-        return Path().apply {
-            for (i in 0..5) {
-                val a = Math.toRadians(60.0 * i - 30.0)
-                val x = size * cos(a).toFloat()
-                val y = size * sin(a).toFloat()
-                if (i == 0) moveTo(x, y) else lineTo(x, y)
-            }
-            close()
-        }
-    }
-
-    private fun ease(t: Float): Float {
-        val c = t.coerceIn(0f, 1f)
-        return if (c < 0.5f) 4f * c * c * c else 1f - (-2f * c + 2f).pow(3) / 2f
-    }
-
-    private fun lerp(a: Int, b: Int, t: Float): Int = (a + (b - a) * t).toInt()
 
     fun isAnimationComplete(): Boolean = phase >= 1f
 
-    inner class Star {
-        var x = Random.nextFloat() * 3000
-        var y = Random.nextFloat() * 3000
-        var size = Random.nextFloat().pow(2) * 2f + 0.3f
-        var baseAlpha = Random.nextFloat().pow(1.5f) * 0.7f + 0.1f
-        var alpha = baseAlpha
-        private var twinkleSpd = Random.nextFloat() * 4f + 0.5f
-        private var twinkleOff = Random.nextFloat() * 6.28f
-        private var driftSpd = Random.nextFloat() * 3f + 0.5f
-        private var driftAngle = Random.nextFloat() * 6.28f
-        private var tintR = 200 + Random.nextInt(56)
-        private var tintG = 200 + Random.nextInt(56)
-        private var tintB = 220 + Random.nextInt(36)
-
-        fun update(dt: Float) {
-            x += cos(driftAngle) * driftSpd * dt
-            y += sin(driftAngle) * driftSpd * dt
-            if (x < -10) x += width + 20f
-            if (x > width + 10) x -= width + 20f
-            if (y < -10) y += height + 20f
-            if (y > height + 10) y -= height + 20f
-            val t = time * 0.001f * twinkleSpd + twinkleOff
-            alpha = baseAlpha * (0.4f + 0.6f * (sin(t) * 0.5f + 0.5f))
-        }
+    inner class Star(szBase: Float) {
+        var x = Random.nextFloat(); var y = Random.nextFloat(); var sz = Random.nextFloat().pow(2) * szBase + .08f
+        var a = 0f; var baseA = Random.nextFloat().pow(1.5f) * .5f + .01f; var tw = rand(.4f, 5f); var to = rand(0f, TAU); var temp = Random.nextFloat()
     }
 
-    inner class DustMote {
-        var x = Random.nextFloat() * 3000
-        var y = Random.nextFloat() * 3000
-        var tx = x; var ty = y
-        var size = Random.nextFloat() * 5f + 2f
-        var alpha = 0f
-        var trailLen = 0f
-        var color = when (Random.nextInt(5)) {
-            0 -> Color.argb(255, 0, 200, 255)
-            1 -> Color.argb(255, 80, 120, 255)
-            2 -> Color.argb(255, 0, 255, 200)
-            3 -> Color.argb(255, 200, 180, 255)
-            else -> Color.argb(255, 140, 80, 255)
-        }
-        private var vx = (Random.nextFloat() - 0.5f) * 20f
-        private var vy = (Random.nextFloat() - 0.5f) * 20f
-        private var noiseOff = Random.nextFloat() * 100f
-
+    inner class Dust {
+        var x = rand(0f, 2000f); var y = rand(0f, 2000f); var px = x; var py = y; var sz = rand(1.5f, 5f); var a = 0f
+        var vx = (Random.nextFloat() - .5f) * 16f; var vy = (Random.nextFloat() - .5f) * 16f; var nOff = rand(0f, 100f)
+        val cols = arrayOf(intArrayOf(0, 180, 255), intArrayOf(60, 100, 255), intArrayOf(0, 255, 180), intArrayOf(180, 140, 255), intArrayOf(140, 50, 255), intArrayOf(255, 160, 80))
+        val c = cols[Random.nextInt(cols.size)]; val cr = c[0]; val cg = c[1]; val cb = c[2]
         fun update(dt: Float, phase: Float) {
-            tx = x; ty = y
-            val noise = sin(time * 0.002f + noiseOff).toFloat() * 15f
-            x += (vx + noise) * dt
-            y += (vy + cos(time * 0.0015f + noiseOff).toFloat() * 10f) * dt
-            if (phase > 0.15f) {
-                val pull = (phase - 0.15f) * 0.8f
-                val dx = cx - x; val dy = cy - y
-                val dist = sqrt(dx * dx + dy * dy)
-                if (dist > R * 0.08f) {
-                    x += dx / dist * pull * 25f * dt
-                    y += dy / dist * pull * 25f * dt
-                }
-            }
-            trailLen = sqrt((x - tx) * (x - tx) + (y - ty) * (y - ty))
-            alpha = if (phase < 0.1f) phase / 0.1f * 0.4f else 0.4f
+            px = x; py = y; val n = sin(time * .002f + nOff).toFloat() * 10f
+            x += (vx + n) * dt; y += (vy + cos(time * .0017f + nOff).toFloat() * 7f) * dt
+            if (phase > .1f) { val pull = (phase - .1f) * .6f; val dx = cx - x; val dy = cy - y; val d = hypot(dx.toDouble(), dy.toDouble()).toFloat(); if (d > R * .05f) { x += dx / d * pull * 20f * dt; y += dy / d * pull * 20f * dt } }
+            a = if (phase < .06f) phase / .06f * .3f else .3f * (1 - phase * .2f)
         }
     }
 
-    inner class EnergyOrb {
-        var angle = Random.nextFloat() * 6.28f
-        var dist = Random.nextFloat() * R * 1.5f + R * 0.2f
-        var x = cx + cos(angle) * dist
-        var y = cy + sin(angle) * dist
-        var tx = x; var ty = y
-        var size = Random.nextFloat() * 6f + 3f
-        var alpha = 0f
-        var trailDist = 0f
-        var color = when (Random.nextInt(4)) {
-            0 -> Color.argb(255, 0, 230, 255)
-            1 -> Color.argb(255, 60, 100, 255)
-            2 -> Color.argb(255, 140, 80, 255)
-            else -> Color.argb(255, 0, 255, 220)
-        }
-        private var speed = Random.nextFloat() * 150f + 50f
-        private var spiral = (Random.nextFloat() - 0.5f) * 4f
-        private var wobble = Random.nextFloat() * 2f
-        private var wobbleOff = Random.nextFloat() * 6.28f
-
-        fun update(dt: Float, phase: Float, convergence: Float) {
-            tx = x; ty = y
-            if (phase < 0.08f) { alpha = 0f; return }
-            angle += (speed / max(dist, 1f) + spiral) * dt
-            dist -= speed * dt * convergence * 0.7f
-            val w = sin(time * 0.005f + wobbleOff).toFloat() * wobble * 5f
-            dist += w * dt
-            if (dist < R * 0.04f) {
-                dist = Random.nextFloat() * R * 1.3f + R * 0.2f
-                angle = Random.nextFloat() * 6.28f
-                color = when (Random.nextInt(4)) {
-                    0 -> Color.argb(255, 0, 230, 255)
-                    1 -> Color.argb(255, 60, 100, 255)
-                    2 -> Color.argb(255, 140, 80, 255)
-                    else -> Color.argb(255, 0, 255, 220)
-                }
-                alpha = 0f
-            }
-            x = cx + cos(angle) * dist
-            y = cy + sin(angle) * dist
-            trailDist = sqrt((x - tx) * (x - tx) + (y - ty) * (y - ty))
-            val fadeIn = min((phase - 0.08f) / 0.12f, 1f)
-            val distF = 1f - (dist / (R * 1.5f)).coerceIn(0f, 1f)
-            alpha = fadeIn * (0.3f + distF * 0.7f)
-            size = (2f + distF * 5f) * d
+    inner class Orb {
+        var angle = rand(0f, TAU); var distF = rand(.2f, 1.5f); var x = 0f; var y = 0f; var px = 0f; var py = 0f; var sz = rand(1.5f, 6f); var a = 0f
+        var spd = rand(40f, 170f); var spiral = rand(-2.5f, 2.5f); var wobble = rand(0f, 2.5f); var wOff = rand(0f, TAU)
+        val cols = arrayOf(intArrayOf(0, 220, 255), intArrayOf(50, 80, 255), intArrayOf(120, 50, 255), intArrayOf(0, 255, 200), intArrayOf(200, 120, 255))
+        val c = cols[Random.nextInt(cols.size)]; val cr = c[0]; val cg = c[1]; val cb = c[2]
+        fun update(dt: Float, phase: Float, arcP2: Float) {
+            px = x; py = y; if (phase < .05f) { a = 0f; return }
+            val dR = distF * R; angle += (spd / max(dR, 1f) + spiral) * dt; distF -= spd * dt * arcP2 * .6f / R; distF += sin(time * .005f + wOff).toFloat() * wobble * .003f
+            if (distF < R * .03f / R) { distF = rand(.2f, 1.4f); angle = rand(0f, TAU); a = 0f; return }
+            val d2 = distF * R; x = cx + cos(angle) * d2; y = cy + sin(angle) * d2
+            a = min((phase - .05f) / .1f, 1f) * (.15f + (1 - distF / 1.5f) * .7f); sz = 1 + (1 - distF / 1.5f) * 4.5f
         }
     }
 
-    inner class EnergyRibbon {
-        var alpha = 0f
-        var width = 0f
-        var c1 = Color.argb(255, 0, 200, 255)
-        var c2 = Color.argb(255, 140, 80, 255)
-        val points = mutableListOf<Pair<Float, Float>>()
-        private var baseAngle = Random.nextFloat() * 6.28f
-        private var dist = Random.nextFloat() * R * 0.8f + R * 0.3f
-        private var speed = Random.nextFloat() * 80f + 40f
-        private var spiralRate = Random.nextFloat() * 2f + 1f
-        private var segCount = Random.nextInt(15, 25)
-
-        init {
-            if (Random.nextBoolean()) {
-                c1 = Color.argb(255, 140, 80, 255)
-                c2 = Color.argb(255, 0, 200, 255)
-            }
-            width = (Random.nextFloat() * 2f + 1f) * d
-        }
-
-        fun update(dt: Float, phase: Float) {
-            if (phase < 0.12f || phase > 0.65f) { alpha = 0f; return }
-            val localP = (phase - 0.12f) / 0.53f
-            alpha = sin(localP * Math.PI.toFloat()) * 0.7f
-            dist -= speed * dt * 0.3f
-            if (dist < R * 0.05f) dist = R * 0.8f + Random.nextFloat() * R * 0.3f
-            baseAngle += spiralRate * dt
-            points.clear()
-            var a = baseAngle
-            var d = dist
-            for (i in 0 until segCount) {
-                val px = cx + cos(a) * d
-                val py = cy + sin(a) * d
-                points.add(Pair(px, py))
-                a += 0.25f + sin(time * 0.003f + i * 0.5f).toFloat() * 0.1f
-                d -= dist * 0.04f
-            }
+    inner class Ribbon {
+        var baseA2 = rand(0f, TAU); var dist = rand(.25f, .9f); var spd = rand(25f, 80f); var spiralR = rand(1.2f, 3f)
+        var segs = randI(18, 28); var w = rand(.8f, 2.2f); val swap = Random.nextBoolean()
+        val c1 = if (swap) intArrayOf(120, 45, 255) else intArrayOf(0, 190, 255); val c2 = if (swap) intArrayOf(0, 190, 255) else intArrayOf(120, 45, 255)
+        val pts = mutableListOf<FloatArray>(); var a = 0f; val off = rand(0f, 100f)
+        fun update(dt: Float, phase: Float, arcP2: Float) {
+            if (phase < .12f || phase > .65f) { a = 0f; return }; a = sin((phase - .12f) / .53f * Math.PI.toFloat()) * .55f
+            val d3 = dist * R * (1 - arcP2 * .35f); baseA2 += spiralR * dt; pts.clear(); var a2 = baseA2; var d = d3
+            for (i in 0 until segs) { pts.add(floatArrayOf(cx + cos(a2) * d, cy + sin(a2) * d)); a2 += .2f + sin(time * .003f + i * .4f + off).toFloat() * .06f; d -= d3 * .03f }
         }
     }
 
     inner class Spark {
-        var x = cx + (Random.nextFloat() - 0.5f) * 30f * d
-        var y = cy + (Random.nextFloat() - 0.5f) * 30f * d
-        var vx = (Random.nextFloat() - 0.5f) * 500f
-        var vy = (Random.nextFloat() - 0.5f) * 500f
-        var size = Random.nextFloat() * 4f * d + 1f
-        var alpha = 1f
-        var life = 1f
-        var color = when (Random.nextInt(5)) {
-            0 -> Color.argb(255, 0, 230, 255)
-            1 -> Color.argb(255, 255, 200, 100)
-            2 -> Color.argb(255, 0, 255, 220)
-            3 -> Color.argb(255, 200, 150, 255)
-            else -> Color.argb(255, 100, 220, 255)
-        }
-        private var decay = Random.nextFloat() * 2f + 1f
-
-        fun update(dt: Float) {
-            x += vx * dt; y += vy * dt
-            vx *= 0.98f; vy *= 0.98f
-            life -= decay * dt
-            alpha = life.coerceIn(0f, 1f)
-            size *= (1f - dt * 0.8f)
-        }
-    }
-
-    inner class Nebula {
-        var x = cx + (Random.nextFloat() - 0.5f) * R * 1.5f
-        var y = cy + (Random.nextFloat() - 0.5f) * R * 1.5f
-        var r = Random.nextFloat() * R * 0.5f + R * 0.2f
-        var alpha = Random.nextFloat() * 0.08f + 0.02f
-        var color = when (Random.nextInt(3)) {
-            0 -> Color.argb(255, 15, 8, 50)
-            1 -> Color.argb(255, 30, 5, 60)
-            else -> Color.argb(255, 5, 20, 55)
-        }
-        private var dx = (Random.nextFloat() - 0.5f) * 6f
-        private var dy = (Random.nextFloat() - 0.5f) * 6f
-
-        fun update(dt: Float, phase: Float) {
-            x += dx * dt; y += dy * dt
-            val breathe = sin(time * 0.0004f + x * 0.005f).toFloat()
-            alpha = (0.03f + breathe * 0.04f).coerceIn(0.01f, 0.1f) * (1f - phase * 0.4f)
-            r = (R * 0.3f + breathe * R * 0.05f).coerceIn(R * 0.1f, R * 0.6f)
-        }
+        var x = cx + rand(-15f, 15f); var y = cy + rand(-15f, 15f); var vx = rand(-300f, 300f); var vy = rand(-300f, 300f)
+        var sz = rand(.3f, 2.5f); var life = 1f; var decay = rand(1f, 2.5f); var cr = randI(0, 80); var cg = randI(180, 255); var cb = randI(200, 255)
+        fun update(dt: Float) { x += vx * dt; y += vy * dt; vx *= .96f; vy *= .96f; life -= decay * dt }
     }
 }
